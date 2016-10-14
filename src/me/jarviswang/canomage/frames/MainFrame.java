@@ -27,6 +27,8 @@ import com.jgoodies.forms.layout.RowSpec;
 
 import jssc.SerialPortList;
 import me.jarviswang.canomega.commons.CommonUtils;
+import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
+import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.protocols.CANProtocols;
 
@@ -37,6 +39,9 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.DropMode;
 import javax.swing.JToggleButton;
 import javax.swing.table.DefaultTableModel;
+
+import org.apache.commons.lang3.StringUtils;
+
 import javax.swing.border.LineBorder;
 import java.awt.Color;
 import javax.swing.border.SoftBevelBorder;
@@ -50,6 +55,10 @@ import java.awt.FlowLayout;
 import javax.swing.SpinnerNumberModel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 public class MainFrame extends JFrame {
 
@@ -66,6 +75,10 @@ public class MainFrame extends JFrame {
 	private JTextField textData1;
 	private JTextField textData0;
 	private CANProtocols CANObj;
+	private JSpinner spinDLC;
+	private JComboBox comboProt;
+	private JCheckBox chckbxRtr;
+	private JButton btnSend;
 
 	/**
 	 * Launch the application.
@@ -202,6 +215,23 @@ public class MainFrame extends JFrame {
 		MainPanel.add(lblBaudrate, "6, 2, left, default");
 		
 		tFBaudRate = new JTextField();
+		tFBaudRate.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				int inputkey = e.getKeyChar();
+				if (tFBaudRate.getText().length()>=7 && inputkey!=8) {
+					e.consume();
+					return ;
+				}
+				if (inputkey == 10 || inputkey == 13) {
+					e.consume();
+				} else {
+					if (inputkey>57 || inputkey<48) {
+						e.consume();
+					}
+				}
+			}
+		});
 		tFBaudRate.setText("115200");
 		tFBaudRate.setHorizontalAlignment(SwingConstants.LEFT);
 		MainPanel.add(tFBaudRate, "8, 2, center, default");
@@ -217,20 +247,91 @@ public class MainFrame extends JFrame {
 		JButton btnConnect = new JButton("Connect");
 		btnConnect.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String serialport = (String) cbSerialPort.getSelectedItem();
-				String baudrate = tFBaudRate.getText();
-				CANObj = new CANProtocols();
-				int resp = CANObj.connect(serialport, baudrate);
-				if (resp==0) {
-					
-				} else {
-					switch (resp) {
-					case 1:
-						JOptionPane.showMessageDialog(null, "Port Busy.Open Port Failed.","Error", JOptionPane.ERROR_MESSAGE);
+				if (btnConnect.getText().equals("Connect")) {
+					String serialport = (String) cbSerialPort.getSelectedItem();
+					String baudrate = tFBaudRate.getText();
+					int resp = 0;
+					if (!StringUtils.isNumeric(baudrate)) {
+						JOptionPane.showMessageDialog(null, "Invalid Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
+						return ;
+					}
+					switch (CommonUtils.protoSelected) {
+					case 0:
+						if (CANObj == null) {
+							CANObj = new CANProtocols();
+						}
+						resp = CANObj.connect(serialport, baudrate);
+						if (resp==0) {
+							CANProtos proto = CANObj.getDefaultProtocol();
+							CANObj.openCANChannel(proto, (OpenMode)cbMode.getSelectedItem());
+							btnConnect.setText("Disconnect");
+							tFBaudRate.setEnabled(false);
+							cbSerialPort.setEnabled(false);
+							txtId.setEnabled(true);
+							spinDLC.setEnabled(true);
+							textData7.setEnabled(true);
+							textData6.setEnabled(true);
+							textData5.setEnabled(true);
+							textData4.setEnabled(true);
+							textData3.setEnabled(true);
+							textData2.setEnabled(true);
+							textData1.setEnabled(true);
+							textData0.setEnabled(true);
+							comboProt.setEnabled(true);
+							chckbxRtr.setEnabled(true);
+							btnSend.setEnabled(true);
+							CommonUtils.state = 1;
+						}
 						break;
+					case 1:break;
+					case 2:break;
 					default:
-						JOptionPane.showMessageDialog(null, "Unknown Error.","Error",JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(null, "Invalid Protocol Selected.","Error", JOptionPane.ERROR_MESSAGE);
+					}
+					
+					if (resp!=0) {
+						switch (resp) {
+						case 1:
+							JOptionPane.showMessageDialog(null, "Port Busy.Open Port Failed.","Error", JOptionPane.ERROR_MESSAGE);
+							break;
+						case 2:
+							JOptionPane.showMessageDialog(null, "Device no Response.Please check your SerialPort/Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
+							break;
+						default:
+							JOptionPane.showMessageDialog(null, "Unknown Error.","Error",JOptionPane.ERROR_MESSAGE);
+							break;
+						}
+						CommonUtils.serialPort = null;
+					}
+				} else {
+					switch (CommonUtils.protoSelected) {
+					case 0:
+						if(CANObj!=null) {
+							CANObj.closeCANChannel();
+							CANObj.disconnect();
+							CANObj = null;
+						}
+						btnConnect.setText("Connect");
+						tFBaudRate.setEnabled(true);
+						cbSerialPort.setEnabled(true);
+						txtId.setEnabled(false);
+						spinDLC.setEnabled(false);
+						textData7.setEnabled(false);
+						textData6.setEnabled(false);
+						textData5.setEnabled(false);
+						textData4.setEnabled(false);
+						textData3.setEnabled(false);
+						textData2.setEnabled(false);
+						textData1.setEnabled(false);
+						textData0.setEnabled(false);
+						comboProt.setEnabled(false);
+						chckbxRtr.setEnabled(false);
+						btnSend.setEnabled(false);
+						CommonUtils.state = 0;
 						break;
+					case 1: break;
+					case 2: break;
+					default: break;
 					}
 				}
 			}
@@ -245,6 +346,15 @@ public class MainFrame extends JFrame {
 		MainPanel.add(tglbtnFollow, "19, 2");
 		
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				int selectedPane = tabbedPane.getSelectedIndex();
+				CommonUtils.protoSelected = selectedPane;
+				//System.out.println("Select: "+selectedPane);
+				
+				
+			}
+		});
 		MainPanel.add(tabbedPane, "2, 4, 18, 1");
 		
 		JPanel panelCAN = new JPanel();
@@ -313,7 +423,7 @@ public class MainFrame extends JFrame {
 		txtId.setColumns(10);
 		txtId.setText("001");
 		
-		JSpinner spinDLC = new JSpinner();
+		spinDLC = new JSpinner();
 		spinDLC.setEnabled(false);
 		spinDLC.setModel(new SpinnerNumberModel(new Byte((byte) 8), new Byte((byte) 0), new Byte((byte) 8), new Byte((byte) 1)));
 		panelCAN.add(spinDLC, "3, 3");
@@ -366,16 +476,16 @@ public class MainFrame extends JFrame {
 		textData0.setColumns(2);
 		textData0.setText("88");
 		
-		JComboBox comboProt = new JComboBox();
+		comboProt = new JComboBox();
 		comboProt.setEnabled(false);
 		panelCAN.add(comboProt, "21, 3, fill, default");
-		comboProt.setModel(new DefaultComboBoxModel(CommonUtils.CANProtocols.values()));
+		comboProt.setModel(new DefaultComboBoxModel(CommonUtils.CANProtos.values()));
 		
-		JCheckBox chckbxRtr = new JCheckBox("RTR");
+		chckbxRtr = new JCheckBox("RTR");
 		chckbxRtr.setEnabled(false);
 		panelCAN.add(chckbxRtr, "23, 3");
 		
-		JButton btnSend = new JButton("Send");
+		btnSend = new JButton("Send");
 		btnSend.setEnabled(false);
 		panelCAN.add(btnSend, "27, 3");
 		
@@ -387,11 +497,10 @@ public class MainFrame extends JFrame {
 			new RowSpec[] {
 				FormSpecs.LABEL_COMPONENT_GAP_ROWSPEC,
 				RowSpec.decode("default:grow"),}));
-		tabbedPane.setEnabledAt(1, false);
 		
 		JPanel panelSAE = new JPanel();
 		tabbedPane.addTab("J1850", null, panelSAE, null);
-		tabbedPane.setEnabledAt(2, false);
+		tabbedPane.setEnabledAt(2, true);
 	}
 	
 	public void ResetUI() {
