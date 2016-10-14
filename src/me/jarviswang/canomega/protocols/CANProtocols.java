@@ -1,6 +1,9 @@
 package me.jarviswang.canomega.protocols;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 import javax.swing.JOptionPane;
 
@@ -9,17 +12,22 @@ import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
 import jssc.SerialPortException;
 import jssc.SerialPortTimeoutException;
+import me.jarviswang.canomega.commons.CANMessageListener;
 import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
+import me.jarviswang.canomega.models.CANMessage;
 
 public class CANProtocols implements SerialPortEventListener {
 	
 	private CANProtos subProto = null;
 	public static StringBuilder incomingMessage = new StringBuilder();
+	protected ArrayList<CANMessageListener> listeners = new ArrayList<CANMessageListener>();
+	protected LinkedList<CANMessage> TXFIFO = new LinkedList<CANMessage>();
 	
 	public CANProtocols() {
 		CommonUtils.state = 0;
+		
 	}
 	
 	public int connect(String port,String Baudrate) {
@@ -71,6 +79,7 @@ public class CANProtocols implements SerialPortEventListener {
 				CommonUtils.Transreceive("S6");
 				break;
 			}
+			this.subProto = Proto;
 			switch (mode) {
 			case NORMAL:
 				CommonUtils.Transreceive("O");
@@ -87,25 +96,32 @@ public class CANProtocols implements SerialPortEventListener {
 			}
 			CommonUtils.serialPort.setEventsMask(1);
 			CommonUtils.serialPort.addEventListener(this);
-		} catch (SerialPortException localSerialPortException) {
-	      return 1;
+		} catch (SerialPortException e) {
+			return 1;
 	    } catch (SerialPortTimeoutException localSerialPortTimeoutException) {
-	      return 2;
+	    	return 2;
 	    }
 		return 0;
 		
 	}
 	
-	public void closeCANChannel() {
+	public int closeCANChannel() {
+		int result = 0;
 		try {
-			CommonUtils.serialPort.removeEventListener();
 			CommonUtils.serialPort.writeBytes("C\r".getBytes());
+			Thread.sleep(100);
+			CommonUtils.serialPort.removeEventListener();
+			
 		} catch (SerialPortException e) {
+			result = 1;
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		CommonUtils.firmwareVersion = null;
 		CommonUtils.hardwareVersion = null;
 		this.subProto = null;
+		return result;
 		
 	}
 	
@@ -130,12 +146,18 @@ public class CANProtocols implements SerialPortEventListener {
 						String str = incomingMessage.toString();
 						int m = str.charAt(0);
 						if ((m == 116) || (m == 84) || (m == 114) || (m == 82)) {
-							// TODO Build CAN Message
+							CANMessage msg = new CANMessage(str);
+							Iterator It = this.listeners.iterator();
+							while (It.hasNext()) {
+								CANMessageListener msglistener = (CANMessageListener)It.next();
+								msglistener.receiveCANMessage(msg);
+							}
 						} else if ((m == 122) || (m == 90)) {
-							//TODO send next message
+							this.TXFIFO.removeFirst();
+							this.sendFirstTXFIFIOMessage();
 							incomingMessage.setLength(0);
 						} else if (k == 7) {
-							//TODO Retry send
+							this.sendFirstTXFIFIOMessage();
 						} else if (k == 13) {
 							this.incomingMessage.append((char)k);
 						}
@@ -148,6 +170,17 @@ public class CANProtocols implements SerialPortEventListener {
 		
 	}
 	
+	protected void sendFirstTXFIFIOMessage() {
+		if (this.TXFIFO.size() == 0 || CommonUtils.serialPort==null) {
+			return ;
+		} 
+		CANMessage msg = this.TXFIFO.getFirst();
+		try {
+			CommonUtils.serialPort.writeBytes((msg.toString()+"\r").getBytes());
+		} catch (SerialPortException e) {
+			e.printStackTrace();
+		}
+	}
 	public CANProtos getDefaultProtocol() {
 		return CommonUtils.CANProtos.CAN500Kbps_11bits;
 	}
@@ -160,5 +193,24 @@ public class CANProtocols implements SerialPortEventListener {
 		this.subProto = proto;
 	}
 	
+	public boolean changeConnectMode(CANProtos newProto,OpenMode newMode) {
+		int res = this.closeCANChannel();
+		if (res==0) {
+			int ret = this.openCANChannel(newProto, newMode);
+			return (ret==0);
+		} else {
+			return false;
+		}
+	}
+	
+	
+	public void addMessageListener(CANMessageListener paramCANMessageListener) {
+		this.listeners.add(paramCANMessageListener);
+    }
+	  
+	public void removeMessageListener(CANMessageListener paramCANMessageListener) {
+		this.listeners.remove(paramCANMessageListener);
+  	}
+
 	
 }
