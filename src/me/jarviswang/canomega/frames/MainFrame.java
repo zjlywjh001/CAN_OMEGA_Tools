@@ -68,6 +68,8 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 public class MainFrame extends JFrame implements CANMessageListener {
 
@@ -91,6 +93,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	private OpenMode lastMode;
 	private CANProtos lastProto;
 	private JToggleButton tglbtnFollow;
+	private long baseTimestamp = 0L;
 
 	/**
 	 * Launch the application.
@@ -284,14 +287,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 								} else {
 									txtId.setEnabled(true);
 									spinDLC.setEnabled(true);
-									textData7.setEnabled(true);
-									textData6.setEnabled(true);
-									textData5.setEnabled(true);
-									textData4.setEnabled(true);
-									textData3.setEnabled(true);
-									textData2.setEnabled(true);
-									textData1.setEnabled(true);
-									textData0.setEnabled(true);
+									MainFrame.this.setFrameState();
 									comboProt.setEnabled(true);
 									chckbxRtr.setEnabled(true);
 									btnSend.setEnabled(true);
@@ -341,14 +337,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 							if (mode!=CommonUtils.OpenMode.LISTENONLY) {
 								txtId.setEnabled(true);
 								spinDLC.setEnabled(true);
-								textData7.setEnabled(true);
-								textData6.setEnabled(true);
-								textData5.setEnabled(true);
-								textData4.setEnabled(true);
-								textData3.setEnabled(true);
-								textData2.setEnabled(true);
-								textData1.setEnabled(true);
-								textData0.setEnabled(true);
+								MainFrame.this.setFrameState();
 								comboProt.setEnabled(true);
 								chckbxRtr.setEnabled(true);
 								btnSend.setEnabled(true);
@@ -357,6 +346,9 @@ public class MainFrame extends JFrame implements CANMessageListener {
 							CANObj.addMessageListener(MainFrame.this);
 							MainFrame.this.log("Connected to CANOmega (FW"+CommonUtils.firmwareVersion+"/HW"+CommonUtils.hardwareVersion+
 									", SN: "+CommonUtils.serialNumber+")", LogMessage.MessageType.INFO);
+							if (MainFrame.this.baseTimestamp == 0L) {
+								MainFrame.this.baseTimestamp = System.currentTimeMillis();
+						    }
 						}
 						break;
 					case 1:break;
@@ -407,6 +399,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", LogMessage.MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
+						txtId.setText("001");
 						break;
 					case 1: break;
 					case 2: break;
@@ -422,6 +415,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 			public void actionPerformed(ActionEvent e) {
 				LogMessageTableModel ltm = (LogMessageTableModel) MainFrame.this.Logtable.getModel();
 				ltm.clear();
+				MainFrame.this.baseTimestamp = System.currentTimeMillis();
 			}
 		});
 		MainPanel.add(btnClear, "17, 2");
@@ -490,6 +484,35 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		scrollPane.setViewportView(Logtable);
 		
 		txtId = new JTextField();
+		txtId.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				String msgId = txtId.getText();
+				if (MainFrame.this.lastProto == CommonUtils.CANProtos.CAN250Kbps_11bits
+						|| MainFrame.this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+					while (msgId.length() < 3) {
+						msgId = "0" + msgId;
+					}
+					if (msgId.length() > 3) {
+						msgId = msgId.substring(msgId.length()-3);
+					}
+					if (msgId.getBytes()[0]>55) {
+						msgId = "7" + msgId.substring(1);
+					}
+				} else {
+					while (msgId.length() < 8) {
+						msgId = "0" + msgId;
+					}
+					if (msgId.length() > 8) {
+						msgId = msgId.substring(msgId.length()-8);
+					}
+					if (msgId.getBytes()[0]>49) {
+						msgId = "1" + msgId.substring(1);
+					}
+				}
+				txtId.setText(msgId);
+			}
+		});
 		txtId.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -791,20 +814,23 @@ public class MainFrame extends JFrame implements CANMessageListener {
 								if (newProto == CommonUtils.CANProtos.CAN250Kbps_11bits 
 										|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
 									String strId = txtId.getText();
-									if (strId.length()>3) {
+									while (strId.length() < 3) {
+										strId = "0" + strId;
+									}
+									if (strId.length() > 3) {
 										strId = strId.substring(strId.length()-3);
-									} else {
-										while (strId.length()<3) {
-											strId = "0" + strId;
-										}
+									}
+									if (strId.getBytes()[0]>55) {
+										strId = "7" + strId.substring(1);
 									}
 									txtId.setText(strId);
 								} else {
 									String strId = txtId.getText();
-									if (strId.length()<8) {
-										while (strId.length()<8) {
-											strId = "0" + strId;
-										}
+									while (strId.length() < 8) {
+										strId = "0" + strId;
+									}
+									if (strId.length() > 8) {
+										strId = strId.substring(strId.length()-8);
 									}
 									if (strId.getBytes()[0]>49) {
 										strId = "1" + strId.substring(1);
@@ -847,6 +873,11 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		panelCAN.add(chckbxRtr, "23, 3");
 		
 		btnSend = new JButton("Send");
+		btnSend.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				MainFrame.this.sendButtonActionPerformed(e);
+			}
+		});
 		btnSend.setEnabled(false);
 		panelCAN.add(btnSend, "27, 3");
 		
@@ -872,13 +903,113 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	public void log(String msg,LogMessage.MessageType type) {
 		LogMessageTableModel ltm = (LogMessageTableModel) this.Logtable.getModel();
 		ltm.addMessage(new LogMessage(null,msg,type,System.currentTimeMillis()));
-		if (this.tglbtnFollow.isSelected()) {
-			this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(ltm.getRowCount() - 1, 0, true));
+		try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+		if (this.tglbtnFollow.isSelected()) {
+			this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(ltm.getRowCount() - 1, 0, false));
+		}
+	}
+	
+	public void log(LogMessage msg)
+	  {
+	    LogMessageTableModel lmt = (LogMessageTableModel)this.Logtable.getModel();
+	    lmt.addMessage(msg);
+	    try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	    if (this.tglbtnFollow.isSelected()) {
+	      this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(lmt.getRowCount() - 1, 0, false));
+	    }
+	  }
+	
+	private void sendButtonActionPerformed(ActionEvent e) {
+		if (this.CANObj == null) {
+			return ;
+		}
+		String sendString = "";
+		String msgId = txtId.getText();
+		boolean rtr = chckbxRtr.isSelected();
+		byte DLC = ((Byte)this.spinDLC.getValue()).byteValue();
+		String data7 = textData7.getText();
+		String data6 = textData6.getText();
+		String data5 = textData5.getText();
+		String data4 = textData4.getText();
+		String data3 = textData3.getText();
+		String data2 = textData2.getText();
+		String data1 = textData1.getText();
+		String data0 = textData0.getText();
+		String[] dataArray = new String[]{data7,data6,data5,data4,data3,data2,data1,data0};
+		if (this.lastProto == CommonUtils.CANProtos.CAN250Kbps_11bits
+				|| this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+			if (rtr) {
+				sendString += "r";
+			} else {
+				sendString += "t";
+			}
+			while (msgId.length() < 3) {
+				msgId = "0" + msgId;
+			}
+			if (msgId.length() > 3) {
+				msgId = msgId.substring(msgId.length()-3);
+			}
+			if (msgId.getBytes()[0]>55) {
+				msgId = "7" + msgId.substring(1);
+			}
+		} else {
+			if (rtr) {
+				sendString += "R";
+			} else {
+				sendString += "T";
+			}
+			while (msgId.length() < 8) {
+				msgId = "0" + msgId;
+			}
+			if (msgId.length() > 8) {
+				msgId = msgId.substring(msgId.length()-8);
+			}
+			if (msgId.getBytes()[0]>49) {
+				msgId = "1" + msgId.substring(1);
+			}
+		}
+		sendString += msgId;
+		sendString += String.valueOf(DLC);
+		if (!rtr) {
+			for (int i = 0; i < DLC; i++) {
+				if (dataArray[i].length()<2) {
+					sendString = sendString + "0" + dataArray[i];
+				} else {
+					sendString += dataArray[i];
+				}
+			}
+		}
+		CANMessage msgsend = new CANMessage(sendString);
+		this.log(new LogMessage(msgsend,null,LogMessage.MessageType.OUT,System.currentTimeMillis() - this.baseTimestamp));
+		int res = this.CANObj.send(msgsend);
+		System.out.println("Packet sent: "+msgsend);
+		if (res!=0) {
+			log("Send Message Failed!!", LogMessage.MessageType.ERROR);
+		} 
 	}
 	
 	private void setFrameState() {
 		int spinvalue = ((Byte)spinDLC.getValue()).byteValue();
+		boolean rtr = chckbxRtr.isSelected();
+		if (rtr) {
+			textData7.setEnabled(false);
+			textData6.setEnabled(false);
+			textData5.setEnabled(false);
+			textData4.setEnabled(false);
+			textData3.setEnabled(false);
+			textData2.setEnabled(false);
+			textData1.setEnabled(false);
+			textData0.setEnabled(false);
+			return ;
+		}
 		switch (spinvalue) {
 		case 0:
 			textData7.setEnabled(false);
@@ -976,7 +1107,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 
 	@Override
 	public void receiveCANMessage(CANMessage msg) {
-		// TODO Auto-generated method stub
+		 this.log(new LogMessage(msg, null, LogMessage.MessageType.IN, System.currentTimeMillis() - this.baseTimestamp));
 		
 	}
 

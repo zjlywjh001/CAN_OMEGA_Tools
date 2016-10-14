@@ -21,7 +21,7 @@ import me.jarviswang.canomega.models.CANMessage;
 public class CANProtocols implements SerialPortEventListener {
 	
 	private CANProtos subProto = null;
-	public static StringBuilder incomingMessage = new StringBuilder();
+	private StringBuilder incomingMessage = new StringBuilder();
 	protected ArrayList<CANMessageListener> listeners = new ArrayList<CANMessageListener>();
 	protected LinkedList<CANMessage> TXFIFO = new LinkedList<CANMessage>();
 	
@@ -142,8 +142,8 @@ public class CANProtocols implements SerialPortEventListener {
 				byte[] arrayOfByte1 = CommonUtils.serialPort.readBytes();
 				System.out.println(Arrays.toString(arrayOfByte1));
 				for (int k:arrayOfByte1) {
-					if ((k==13) && (incomingMessage.length()>0)) {
-						String str = incomingMessage.toString();
+					if ((k==13) && (this.incomingMessage.length()>0)) {
+						String str = this.incomingMessage.toString();
 						int m = str.charAt(0);
 						if ((m == 116) || (m == 84) || (m == 114) || (m == 82)) {
 							CANMessage msg = new CANMessage(str);
@@ -155,12 +155,12 @@ public class CANProtocols implements SerialPortEventListener {
 						} else if ((m == 122) || (m == 90)) {
 							this.TXFIFO.removeFirst();
 							this.sendFirstTXFIFIOMessage();
-							incomingMessage.setLength(0);
-						} else if (k == 7) {
-							this.sendFirstTXFIFIOMessage();
-						} else if (k == 13) {
-							this.incomingMessage.append((char)k);
 						}
+						this.incomingMessage.setLength(0);
+					} else if (k == 7) {
+						this.sendFirstTXFIFIOMessage();
+					} else if (k != 13) {
+						this.incomingMessage.append((char)k);
 					}
 				}
 			} catch (SerialPortException e) {
@@ -170,17 +170,27 @@ public class CANProtocols implements SerialPortEventListener {
 		
 	}
 	
-	protected void sendFirstTXFIFIOMessage() {
+	protected int sendFirstTXFIFIOMessage() {
 		if (this.TXFIFO.size() == 0 || CommonUtils.serialPort==null) {
-			return ;
+			return 1;
 		} 
 		CANMessage msg = this.TXFIFO.getFirst();
 		try {
 			CommonUtils.serialPort.writeBytes((msg.toString()+"\r").getBytes());
 		} catch (SerialPortException e) {
-			e.printStackTrace();
+			return 2;
 		}
+		return 0;
 	}
+	
+	public int send(CANMessage paramCANMessage) {
+		this.TXFIFO.add(paramCANMessage);
+		if (this.TXFIFO.size() > 1) {
+			return 0;
+		}
+		return sendFirstTXFIFIOMessage();
+	}
+	
 	public CANProtos getDefaultProtocol() {
 		return CommonUtils.CANProtos.CAN500Kbps_11bits;
 	}
@@ -202,6 +212,8 @@ public class CANProtocols implements SerialPortEventListener {
 			return false;
 		}
 	}
+	
+	
 	
 	
 	public void addMessageListener(CANMessageListener paramCANMessageListener) {

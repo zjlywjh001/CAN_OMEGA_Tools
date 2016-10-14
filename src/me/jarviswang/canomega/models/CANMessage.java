@@ -1,5 +1,7 @@
 package me.jarviswang.canomega.models;
 
+import java.util.Arrays;
+
 public class CANMessage {
 	protected int id;
 	protected byte[] data;
@@ -123,18 +125,20 @@ public class CANMessage {
 			} else {
 				str = "T";
 			}
+			str += String.format("%08X", this.id);
 		} else {
 			if (this.rtr) {
 				str = "r";
 			} else {
 				str = "t";
 			}
+			str += String.format("%03X", this.id);
 		}
-		str += String.format("%03x", this.id);
-		str += String.format("%01x", this.data.length);
-		if (this.rtr) {
+		
+		str += String.format("%01X", this.data.length);
+		if (!this.rtr) {
 			for (int i = 0; i < this.data.length; i++) {
-				str += String.format("%02x", this.data[i]);
+				str += String.format("%02X", this.data[i]);
 			}
 		}
 		return str;
