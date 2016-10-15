@@ -31,6 +31,7 @@ public class MonitorMessageTableModel implements TableModel {
 			MonitorMessage mmsg = this.messages.get(Integer.valueOf(i));
 			mmsg.increaseCount();
 			mmsg.setPeriod(msg.getTimestamp() - mmsg.getLastLogMessage().getTimestamp());
+			mmsg.setMsgforDiff(mmsg.getLastLogMessage());
 			mmsg.setLastLogMessage(msg);
 			int k = this.messages.headMap(Integer.valueOf(i)).size();
 			evt = new TableModelEvent(this,k,k,TableModelEvent.ALL_COLUMNS,TableModelEvent.UPDATE);
@@ -100,6 +101,7 @@ public class MonitorMessageTableModel implements TableModel {
 		MonitorMessage msg = (MonitorMessage) this.messages.values().toArray()[rowIndex];
 		LogMessage lmsg = msg.getLastLogMessage();
 		CANMessage cmsg = lmsg.getCanmsg();
+		LogMessage diffmsg = msg.getMsgforDiff();
 		switch (columnIndex) {
 		case 0:
 			return Long.valueOf(msg.getPeriod());
@@ -118,15 +120,23 @@ public class MonitorMessageTableModel implements TableModel {
 			if (cmsg.isRtr()) {
 				return "Remote Transmission Request";
 			}
-			String str = "";
+			String str = "<html>";
 			byte[] arrayOfByte = cmsg.getData();
+			byte[] bytediffdata = null;
+			if (diffmsg!=null) {
+				bytediffdata = diffmsg.getCanmsg().getData();
+			}
 			for (int i = 0;i < arrayOfByte.length; i++) {
 				if (i > 0) {
 					str = str.concat(" ");
 				}
-				str = str.concat(String.format("%02X", arrayOfByte[i]));
+				if ((diffmsg!=null) && (i<bytediffdata.length) && (arrayOfByte[i]!=bytediffdata[i])) {
+					str = str.concat("<font color='red'>"+String.format("%02X", arrayOfByte[i])+"</font>");
+				} else {
+					str = str.concat(String.format("%02X", arrayOfByte[i]));
+				}
 			}
-			return str;
+			return str+"</html>";
 		}
 		return "";
 	}

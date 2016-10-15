@@ -160,7 +160,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		JMenu mnAnalysis = new JMenu("Analysis");
 		menuBar.add(mnAnalysis);
 		
-		mntmPacketDiffTool = new JMenuItem("Packets Diff tool");
+		mntmPacketDiffTool = new JMenuItem("Packet Diff tool");
 		mntmPacketDiffTool.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (CommonUtils.state == 0) {

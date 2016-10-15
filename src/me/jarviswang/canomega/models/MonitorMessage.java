@@ -3,6 +3,7 @@ package me.jarviswang.canomega.models;
 public class MonitorMessage {
 	
 	private LogMessage lastLogMessage;
+	private LogMessage diffmsg;
 	private long period;
 	private long count;
 	
@@ -32,8 +33,18 @@ public class MonitorMessage {
 	
 	public MonitorMessage(LogMessage msg) {
 		this.lastLogMessage = msg;
+		this.diffmsg = null;
 		this.count = 1L;
 		this.period = 0L;
+	}
+	
+	public LogMessage getMsgforDiff() {
+		return this.diffmsg;
+	}
+	
+	public void setMsgforDiff(LogMessage diff) {
+		
+		this.diffmsg = diff;
 	}
 
 }
