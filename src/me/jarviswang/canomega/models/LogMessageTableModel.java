@@ -98,9 +98,9 @@ public class LogMessageTableModel implements TableModel {
 			return this.icons[this.messages.get(rowIndex).getType().ordinal()];
 		case 2:
 			if (msg.isExtended()) {
-				return String.format("%08Xh", Integer.valueOf(msg.getId()));
+				return String.format("%08Xh",msg.getId());
 			}
-			return String.format("%03Xh", Integer.valueOf(msg.getId()));
+			return String.format("%03Xh", msg.getId());
 		case 3:
 			return Integer.valueOf(msg.getData().length);
 		case 4:
@@ -113,7 +113,7 @@ public class LogMessageTableModel implements TableModel {
 				if (i > 0) {
 					str = str.concat(" ");
 				}
-				str = str.concat(String.format("%02X", Byte.valueOf(arrayOfByte[i])));
+				str = str.concat(String.format("%02X", arrayOfByte[i]));
 			}
 			return str;
 		}

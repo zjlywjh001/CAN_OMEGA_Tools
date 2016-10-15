@@ -15,6 +15,7 @@ import javax.swing.JMenu;
 import javax.swing.JLabel;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.swing.JComboBox;
@@ -33,9 +34,12 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.dialogs.AboutDialog;
+import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.LogMessage;
 import me.jarviswang.canomega.models.LogMessageTableModel;
+import me.jarviswang.canomega.models.MonitorMessageTableModel;
+import me.jarviswang.canomega.models.LogMessage.MessageType;
 import me.jarviswang.canomega.protocols.CANProtocols;
 
 import javax.swing.SwingConstants;
@@ -94,6 +98,10 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	private CANProtos lastProto;
 	private JToggleButton tglbtnFollow;
 	private long baseTimestamp = 0L;
+	private JMenuItem mntmPacketDiffTool;
+	private JMenuItem mntmCanFuzzingTool;
+	private PacketDiff difftoolWindow;
+	private final ArrayList<LogMessage> MonitorBuffer = new ArrayList<LogMessage>();
 
 	/**
 	 * Launch the application.
@@ -152,13 +160,50 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		JMenu mnAnalysis = new JMenu("Analysis");
 		menuBar.add(mnAnalysis);
 		
-		JMenuItem mntmPacketDiffTool = new JMenuItem("Packets Diff tool");
+		mntmPacketDiffTool = new JMenuItem("Packets Diff tool");
+		mntmPacketDiffTool.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (CommonUtils.state == 0) {
+					JOptionPane.showMessageDialog(null, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+				} else {
+					MainFrame.this.difftoolWindow.getCloseButton().addActionListener(new ActionListener() {
+						@Override
+						public void actionPerformed(ActionEvent e) {
+							MainFrame.this.difftoolWindow.setVisible(false);
+						}
+						
+					});
+					MainFrame.this.difftoolWindow.setVisible(true);
+				}
+			}
+		});
 		mnAnalysis.add(mntmPacketDiffTool);
+		
+		difftoolWindow = new PacketDiff();
+		difftoolWindow.getPauseButton().addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				if (!difftoolWindow.getPauseButton().isSelected()) {
+					MonitorMessageTableModel mmtm = (MonitorMessageTableModel) difftoolWindow.getmonitorTable().getModel();
+					for (LogMessage msg:MainFrame.this.MonitorBuffer) {
+				    	mmtm.add(msg);
+					}
+					MainFrame.this.MonitorBuffer.clear();
+				}
+			}
+		});
+		
 		
 		JMenu mnAttack = new JMenu("Attack");
 		menuBar.add(mnAttack);
 		
-		JMenuItem mntmCanFuzzingTool = new JMenuItem("CAN fuzzing tool");
+		mntmCanFuzzingTool = new JMenuItem("CAN fuzzing tool");
+		mntmCanFuzzingTool.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (CommonUtils.state == 0) {
+					JOptionPane.showMessageDialog(null, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		});
 		mnAttack.add(mntmCanFuzzingTool);
 		
 		JMenu mnHelp = new JMenu("Help");
@@ -292,7 +337,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 									chckbxRtr.setEnabled(true);
 									btnSend.setEnabled(true);
 								}
-									MainFrame.this.log("Changed to "+newMode+" Mode.",  LogMessage.MessageType.INFO);
+									MainFrame.this.log("Changed to "+newMode+" Mode.",  MessageType.INFO);
 								lastMode = newMode;
 							}
 						}
@@ -345,7 +390,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 							CommonUtils.state = 1;
 							CANObj.addMessageListener(MainFrame.this);
 							MainFrame.this.log("Connected to CANOmega (FW"+CommonUtils.firmwareVersion+"/HW"+CommonUtils.hardwareVersion+
-									", SN: "+CommonUtils.serialNumber+")", LogMessage.MessageType.INFO);
+									", SN: "+CommonUtils.serialNumber+")", MessageType.INFO);
 							if (MainFrame.this.baseTimestamp == 0L) {
 								MainFrame.this.baseTimestamp = System.currentTimeMillis();
 						    }
@@ -397,7 +442,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 						chckbxRtr.setEnabled(false);
 						btnSend.setEnabled(false);
 						CommonUtils.state = 0;
-						MainFrame.this.log("Disconnected.", LogMessage.MessageType.INFO);
+						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
 						txtId.setText("001");
 						break;
@@ -414,7 +459,10 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		btnClear.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				LogMessageTableModel ltm = (LogMessageTableModel) MainFrame.this.Logtable.getModel();
+				MonitorMessageTableModel mmtm = (MonitorMessageTableModel) MainFrame.this.difftoolWindow.getmonitorTable().getModel();
 				ltm.clear();
+				mmtm.clear();
+				MainFrame.this.MonitorBuffer.clear();
 				MainFrame.this.baseTimestamp = System.currentTimeMillis();
 			}
 		});
@@ -837,7 +885,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 									}
 									txtId.setText(strId);
 								}
-									MainFrame.this.log("Changed to "+newProto+" Protocol.",  LogMessage.MessageType.INFO);
+									MainFrame.this.log("Changed to "+newProto+" Protocol.",  MessageType.INFO);
 									lastProto = newProto;
 							}
 						}
@@ -900,7 +948,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		
 	}
 	
-	public void log(String msg,LogMessage.MessageType type) {
+	public void log(String msg,MessageType type) {
 		LogMessageTableModel ltm = (LogMessageTableModel) this.Logtable.getModel();
 		ltm.addMessage(new LogMessage(null,msg,type,System.currentTimeMillis()));
 		try {
@@ -924,6 +972,15 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		}
 	    if (this.tglbtnFollow.isSelected()) {
 	      this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(lmt.getRowCount() - 1, 0, false));
+	    }
+	    if ((msg.getType() == MessageType.OUT) || (msg.getType() == MessageType.IN)) {
+	    	if (this.difftoolWindow.getPauseButton().isSelected()) {
+	    		this.MonitorBuffer.add(msg);
+	    	} else {
+	    		MonitorMessageTableModel mmtm = (MonitorMessageTableModel) difftoolWindow.getmonitorTable().getModel();
+		    	mmtm.add(msg);
+	    	}
+	    	
 	    }
 	  }
 	
@@ -988,11 +1045,11 @@ public class MainFrame extends JFrame implements CANMessageListener {
 			}
 		}
 		CANMessage msgsend = new CANMessage(sendString);
-		this.log(new LogMessage(msgsend,null,LogMessage.MessageType.OUT,System.currentTimeMillis() - this.baseTimestamp));
+		this.log(new LogMessage(msgsend,null,MessageType.OUT,System.currentTimeMillis() - this.baseTimestamp));
 		int res = this.CANObj.send(msgsend);
 		System.out.println("Packet sent: "+msgsend);
 		if (res!=0) {
-			log("Send Message Failed!!", LogMessage.MessageType.ERROR);
+			log("Send Message Failed!!", MessageType.ERROR);
 		} 
 	}
 	
@@ -1107,7 +1164,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 
 	@Override
 	public void receiveCANMessage(CANMessage msg) {
-		 this.log(new LogMessage(msg, null, LogMessage.MessageType.IN, System.currentTimeMillis() - this.baseTimestamp));
+		 this.log(new LogMessage(msg, null, MessageType.IN, System.currentTimeMillis() - this.baseTimestamp));
 		
 	}
 

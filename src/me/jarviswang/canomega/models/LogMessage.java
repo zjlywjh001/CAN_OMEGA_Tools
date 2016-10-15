@@ -4,10 +4,10 @@ public class LogMessage {
 
 	private CANMessage canmsg;
 	private String message;
-	private LogMessage.MessageType type;
+	private MessageType type;
 	private long timestamp;
 	
-	public LogMessage.MessageType getType() {
+	public MessageType getType() {
 		return this.type;
 	}
 	
@@ -24,7 +24,7 @@ public class LogMessage {
 	}
 	
 	
-	public LogMessage(CANMessage msg,String msgstr,LogMessage.MessageType type,long ts) {
+	public LogMessage(CANMessage msg,String msgstr,MessageType type,long ts) {
 		this.canmsg = msg;
 		this.message = msgstr;
 		this.type = type;
