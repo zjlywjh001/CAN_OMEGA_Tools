@@ -214,7 +214,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 			public void actionPerformed(ActionEvent e) {
 				AboutDialog ad = new AboutDialog();
 				JPanel buttonPane = new JPanel();
-				buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
+				buttonPane.setLayout(new FlowLayout(FlowLayout.CENTER));
 				ad.getContentPane().add(buttonPane, BorderLayout.SOUTH);
 				JButton okButton = new JButton("OK");
 				okButton.addActionListener(new ActionListener() {
