@@ -34,6 +34,7 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.dialogs.AboutDialog;
+import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.LogMessage;
@@ -68,6 +69,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
 import java.awt.event.ItemListener;
@@ -102,6 +106,8 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	private JMenuItem mntmCanFuzzingTool;
 	private PacketDiff difftoolWindow;
 	private final ArrayList<LogMessage> MonitorBuffer = new ArrayList<LogMessage>();
+	private CANFuzzer FuzzingtoolWindow;
+	private JTextField tffuzzId;
 
 	/**
 	 * Launch the application.
@@ -164,7 +170,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		mntmPacketDiffTool.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (CommonUtils.state == 0) {
-					JOptionPane.showMessageDialog(null, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(MainFrame.this, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
 				} else {
 					MainFrame.this.difftoolWindow.getCloseButton().addActionListener(new ActionListener() {
 						@Override
@@ -197,10 +203,43 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		menuBar.add(mnAttack);
 		
 		mntmCanFuzzingTool = new JMenuItem("CAN fuzzing tool");
+		tffuzzId = null;
 		mntmCanFuzzingTool.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (MainFrame.this.lastMode == OpenMode.LISTENONLY) {
+					JOptionPane.showMessageDialog(MainFrame.this, "Fuzzing tool cannot work in "+MainFrame.this.lastMode+" Mode.","Error", JOptionPane.ERROR_MESSAGE);
+					return ;
+				}
 				if (CommonUtils.state == 0) {
-					JOptionPane.showMessageDialog(null, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(MainFrame.this, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+				} else {
+					FuzzingtoolWindow = new CANFuzzer(MainFrame.this);
+					FuzzingtoolWindow.setCANObj(MainFrame.this.CANObj);
+					MainFrame.this.tffuzzId = FuzzingtoolWindow.gettfFuzzId();
+					MainFrame.this.ChangeIdFieldByProtocol(MainFrame.this.CANObj.getCurrentProto());
+					FuzzingtoolWindow.setVisible(true);
+					FuzzingtoolWindow.getCloseButton().addActionListener(new ActionListener() {
+						public void actionPerformed(ActionEvent e) {
+							int resp = JOptionPane.showConfirmDialog(FuzzingtoolWindow, "Sure to stop fuzzing and quit?","Warning", JOptionPane.YES_NO_OPTION);
+							if (resp==0)
+							{
+								MainFrame.this.FuzzingtoolWindow.dispose();
+								MainFrame.this.tffuzzId = null;
+							}
+							
+						}
+					});
+					FuzzingtoolWindow.addWindowListener(new WindowAdapter() {
+						@Override
+						public void windowClosing(WindowEvent e) {
+							int resp = JOptionPane.showConfirmDialog(FuzzingtoolWindow, "Sure to stop fuzzing and quit?","Warning", JOptionPane.YES_NO_OPTION);
+							if (resp==0)
+							{
+								MainFrame.this.FuzzingtoolWindow.dispose();
+								MainFrame.this.tffuzzId = null;
+							}
+						}
+					});
 				}
 			}
 		});
@@ -312,7 +351,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 						if (MainFrame.this.CANObj!=null) {
 							boolean res = CANObj.changeConnectMode(CANObj.getCurrentProto(),newMode);
 							if (!res) {
-								JOptionPane.showMessageDialog(null, "Change Connect Mode Failed.","Error", JOptionPane.ERROR_MESSAGE);
+								JOptionPane.showMessageDialog(MainFrame.this, "Change Connect Mode Failed.","Error", JOptionPane.ERROR_MESSAGE);
 								cbMode.setSelectedItem(MainFrame.this.lastMode);
 							} else {
 								if (newMode == CommonUtils.OpenMode.LISTENONLY) {
@@ -360,7 +399,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 					String baudrate = tFBaudRate.getText();
 					int resp = 0;
 					if (!StringUtils.isNumeric(baudrate)) {
-						JOptionPane.showMessageDialog(null, "Invalid Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(MainFrame.this, "Invalid Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
 						return ;
 					}
 					switch (CommonUtils.protoSelected) {
@@ -399,19 +438,19 @@ public class MainFrame extends JFrame implements CANMessageListener {
 					case 1:break;
 					case 2:break;
 					default:
-						JOptionPane.showMessageDialog(null, "Invalid Protocol Selected.","Error", JOptionPane.ERROR_MESSAGE);
+						JOptionPane.showMessageDialog(MainFrame.this, "Invalid Protocol Selected.","Error", JOptionPane.ERROR_MESSAGE);
 					}
 					
 					if (resp!=0) {
 						switch (resp) {
 						case 1:
-							JOptionPane.showMessageDialog(null, "Port Busy.Open Port Failed.","Error", JOptionPane.ERROR_MESSAGE);
+							JOptionPane.showMessageDialog(MainFrame.this, "Port Busy.Open Port Failed.","Error", JOptionPane.ERROR_MESSAGE);
 							break;
 						case 2:
-							JOptionPane.showMessageDialog(null, "Device no Response.Please check your SerialPort/Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
+							JOptionPane.showMessageDialog(MainFrame.this, "Device no Response.Please check your SerialPort/Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
 							break;
 						default:
-							JOptionPane.showMessageDialog(null, "Unknown Error.","Error",JOptionPane.ERROR_MESSAGE);
+							JOptionPane.showMessageDialog(MainFrame.this, "Unknown Error.","Error",JOptionPane.ERROR_MESSAGE);
 							break;
 						}
 						CommonUtils.serialPort = null;
@@ -856,37 +895,10 @@ public class MainFrame extends JFrame implements CANMessageListener {
 						if (MainFrame.this.CANObj!=null) {
 							boolean res = CANObj.changeConnectMode(newProto,lastMode);
 							if (!res) {
-								JOptionPane.showMessageDialog(null, "Change CAN Protocol Failed.","Error", JOptionPane.ERROR_MESSAGE);
+								JOptionPane.showMessageDialog(MainFrame.this, "Change CAN Protocol Failed.","Error", JOptionPane.ERROR_MESSAGE);
 								comboProt.setSelectedItem(MainFrame.this.lastProto);
 							} else {
-								if (newProto == CommonUtils.CANProtos.CAN250Kbps_11bits 
-										|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
-									String strId = txtId.getText();
-									while (strId.length() < 3) {
-										strId = "0" + strId;
-									}
-									if (strId.length() > 3) {
-										strId = strId.substring(strId.length()-3);
-									}
-									if (strId.getBytes()[0]>55) {
-										strId = "7" + strId.substring(1);
-									}
-									txtId.setText(strId);
-								} else {
-									String strId = txtId.getText();
-									while (strId.length() < 8) {
-										strId = "0" + strId;
-									}
-									if (strId.length() > 8) {
-										strId = strId.substring(strId.length()-8);
-									}
-									if (strId.getBytes()[0]>49) {
-										strId = "1" + strId.substring(1);
-									}
-									txtId.setText(strId);
-								}
-									MainFrame.this.log("Changed to "+newProto+" Protocol.",  MessageType.INFO);
-									lastProto = newProto;
+								MainFrame.this.ChangeIdFieldByProtocol(newProto);
 							}
 						}
 						break;
@@ -1037,6 +1049,9 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		sendString += String.valueOf(DLC);
 		if (!rtr) {
 			for (int i = 0; i < DLC; i++) {
+				if (dataArray[i].length()==0) {
+					dataArray[i] = "0";
+				}
 				if (dataArray[i].length()<2) {
 					sendString = sendString + "0" + dataArray[i];
 				} else {
@@ -1051,6 +1066,65 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		if (res!=0) {
 			log("Send Message Failed!!", MessageType.ERROR);
 		} 
+	}
+	
+	public void ChangeIdFieldByProtocol(CANProtos newProto) {
+		if (newProto == CommonUtils.CANProtos.CAN250Kbps_11bits 
+				|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+			String strId = txtId.getText();
+			while (strId.length() < 3) {
+				strId = "0" + strId;
+			}
+			if (strId.length() > 3) {
+				strId = strId.substring(strId.length()-3);
+			}
+			if (strId.getBytes()[0]>55) {
+				strId = "7" + strId.substring(1);
+			}
+			txtId.setText(strId);
+			if (this.tffuzzId!=null)
+			{
+				strId = this.tffuzzId.getText();
+				while (strId.length() < 3) {
+					strId = "0" + strId;
+				}
+				if (strId.length() > 3) {
+					strId = strId.substring(strId.length()-3);
+				}
+				if (strId.getBytes()[0]>55) {
+					strId = "7" + strId.substring(1);
+				}
+				this.tffuzzId.setText(strId);
+			}
+		} else {
+			String strId = txtId.getText();
+			while (strId.length() < 8) {
+				strId = "0" + strId;
+			}
+			if (strId.length() > 8) {
+				strId = strId.substring(strId.length()-8);
+			}
+			if (strId.getBytes()[0]>49) {
+				strId = "1" + strId.substring(1);
+			}
+			txtId.setText(strId);
+			if (this.tffuzzId!=null)
+			{
+				strId = this.tffuzzId.getText();
+				while (strId.length() < 8) {
+					strId = "0" + strId;
+				}
+				if (strId.length() > 8) {
+					strId = strId.substring(strId.length()-8);
+				}
+				if (strId.getBytes()[0]>49) {
+					strId = "1" + strId.substring(1);
+				}
+				this.tffuzzId.setText(strId);
+			}
+		}
+			MainFrame.this.log("Changed to "+newProto+" Protocol.",  MessageType.INFO);
+			lastProto = newProto;
 	}
 	
 	private void setFrameState() {
@@ -1161,6 +1235,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		default:break;
 		}
 	}
+
 
 	@Override
 	public void receiveCANMessage(CANMessage msg) {

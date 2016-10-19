@@ -16,18 +16,20 @@ public class CommonUtils {
 	public static String serialNumber;
 	public static final int TIMEOUT = 1000;
 	
-	public static enum OpenMode
-	  {
-	    NORMAL,  LISTENONLY,  LOOPBACK;
+	public static enum OpenMode {
+		NORMAL,  LISTENONLY,  LOOPBACK;
 	    private OpenMode() {}
-	  }
-	
-	
-	public static enum CANProtos
-	  {
-		  CAN500Kbps_11bits,CAN500Kbps_29bits,CAN250Kbps_11bits,  CAN250Kbps_29bits;
+	}
+	    
+	public static enum CANProtos {
+		CAN500Kbps_11bits,CAN500Kbps_29bits,CAN250Kbps_11bits,  CAN250Kbps_29bits;
 	    private CANProtos() {}
-	  }
+	}
+	
+	public static enum FuzzOrder {
+		Left_Byte_First, Right_Byte_First;
+	    private FuzzOrder() {}
+	}
 	
 	public static String Transreceive(String data) throws SerialPortException, SerialPortTimeoutException {
 		if (serialPort==null) {
@@ -54,4 +56,5 @@ public class CommonUtils {
 			localStringBuilder.append((char)arrayOfByte[0]);
 		}
 	}
+	
 }

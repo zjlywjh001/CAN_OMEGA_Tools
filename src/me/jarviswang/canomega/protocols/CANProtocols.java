@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import javax.swing.JOptionPane;
-
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortEventListener;
@@ -155,6 +153,8 @@ public class CANProtocols implements SerialPortEventListener {
 						} else if ((m == 122) || (m == 90)) {
 							this.TXFIFO.removeFirst();
 							this.sendFirstTXFIFIOMessage();
+						} else if (m==103 || m==71) {
+							CANMessage msg = new CANMessage(str);
 						}
 						this.incomingMessage.setLength(0);
 					} else if (k == 7) {
@@ -189,6 +189,42 @@ public class CANProtocols implements SerialPortEventListener {
 			return 0;
 		}
 		return sendFirstTXFIFIOMessage();
+	}
+	
+	public int setFuzzer(String fuzzconfstr) {
+		try {
+			CommonUtils.serialPort.writeBytes((fuzzconfstr+"\r").getBytes());
+		} catch (SerialPortException e) {
+			return -1;
+		}
+		return 0;
+	}
+	
+	public int PauseFuzzing() {
+		try {
+			CommonUtils.serialPort.writeBytes("fz\r".getBytes());
+		} catch (SerialPortException e) {
+			return -1;
+		}
+		return 0;
+	}
+	
+	public int ResumeFuzzing() {
+		try {
+			CommonUtils.serialPort.writeBytes("fr\r".getBytes());
+		} catch (SerialPortException e) {
+			return -1;
+		}
+		return 0;
+	}
+	
+	public int StopFuzzing() {
+		try {
+			CommonUtils.serialPort.writeBytes("fP\r".getBytes());
+		} catch (SerialPortException e) {
+			return -1;
+		}
+		return 0;
 	}
 	
 	public CANProtos getDefaultProtocol() {
