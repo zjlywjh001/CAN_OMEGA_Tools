@@ -26,6 +26,11 @@ public class CommonUtils {
 	    private CANProtos() {}
 	}
 	
+	public static enum KProtos {
+		KWP2000_Fast_Init;
+	    private KProtos() {}
+	}
+	
 	public static enum FuzzOrder {
 		Left_Byte_First, Right_Byte_First;
 	    private FuzzOrder() {}

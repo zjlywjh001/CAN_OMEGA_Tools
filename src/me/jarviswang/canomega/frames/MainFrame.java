@@ -32,6 +32,7 @@ import jssc.SerialPortList;
 import me.jarviswang.canomega.commons.CANMessageListener;
 import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
+import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.dialogs.AboutDialog;
@@ -39,11 +40,13 @@ import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.FuzzMessage;
+import me.jarviswang.canomega.models.KLogMessageTableModel;
 import me.jarviswang.canomega.models.LogMessage;
 import me.jarviswang.canomega.models.LogMessageTableModel;
 import me.jarviswang.canomega.models.MonitorMessageTableModel;
 import me.jarviswang.canomega.models.LogMessage.MessageType;
 import me.jarviswang.canomega.protocols.CANProtocols;
+import me.jarviswang.canomega.protocols.KProtocols;
 
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
@@ -110,6 +113,13 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private final ArrayList<LogMessage> MonitorBuffer = new ArrayList<LogMessage>();
 	private CANFuzzer FuzzingtoolWindow;
 	private JTextField tffuzzId;
+	private JTable klogTable;
+	private JTextField txtkdata;
+	private JTextField txtkCs;
+	private JComboBox cbkmode;
+	private JButton btnActive;
+	private JButton btnkSend;
+	private KProtocols KObj;
 
 	/**
 	 * Launch the application.
@@ -313,7 +323,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				FormSpecs.RELATED_GAP_ROWSPEC,
 				RowSpec.decode("max(11dlu;default)"),
 				FormSpecs.RELATED_GAP_ROWSPEC,
-				RowSpec.decode("top:292dlu:grow"),}));
+				RowSpec.decode("fill:292dlu:grow"),}));
 		
 		JLabel lblSerialPort = new JLabel("SerialPort:");
 		MainPanel.add(lblSerialPort, "2, 2, left, default");
@@ -442,6 +452,10 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 								comboProt.setEnabled(true);
 								chckbxRtr.setEnabled(true);
 								btnSend.setEnabled(true);
+								txtkdata.setEnabled(true);
+								txtkCs.setEnabled(true);
+								cbkmode.setEnabled(true);
+								btnActive.setEnabled(true);
 							}
 							CommonUtils.state = 1;
 							CANObj.addMessageListener(MainFrame.this);
@@ -503,6 +517,11 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						comboProt.setEnabled(false);
 						chckbxRtr.setEnabled(false);
 						btnSend.setEnabled(false);
+						txtkdata.setEnabled(false);
+						txtkCs.setEnabled(false);
+						cbkmode.setEnabled(false);
+						btnActive.setEnabled(false);
+						btnkSend.setEnabled(false);
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
@@ -538,7 +557,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		tabbedPane.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				int selectedPane = tabbedPane.getSelectedIndex();
-				CommonUtils.protoSelected = selectedPane;
+				//CommonUtils.protoSelected = selectedPane;
 				//System.out.println("Select: "+selectedPane);
 				
 				
@@ -577,7 +596,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				FormSpecs.RELATED_GAP_COLSPEC,
 				FormSpecs.DEFAULT_COLSPEC,},
 			new RowSpec[] {
-				RowSpec.decode("400px"),
+				RowSpec.decode("fill:400px:grow"),
 				FormSpecs.RELATED_GAP_ROWSPEC,
 				RowSpec.decode("39px"),}));
 		
@@ -966,13 +985,98 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		
 		JPanel panelKline = new JPanel();
 		tabbedPane.addTab("K-Line", null, panelKline, null);
-		tabbedPane.setEnabledAt(1, false);
 		panelKline.setLayout(new FormLayout(new ColumnSpec[] {
+				FormSpecs.RELATED_GAP_COLSPEC,
+				FormSpecs.DEFAULT_COLSPEC,
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(172dlu;default)"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				FormSpecs.DEFAULT_COLSPEC,
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("left:max(17dlu;default)"),
+				FormSpecs.UNRELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(76dlu;default)"),
 				FormSpecs.LABEL_COMPONENT_GAP_COLSPEC,
-				ColumnSpec.decode("default:grow"),},
+				ColumnSpec.decode("left:default:grow"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(42dlu;default)"),
+				FormSpecs.RELATED_GAP_COLSPEC,
+				FormSpecs.DEFAULT_COLSPEC,},
 			new RowSpec[] {
-				FormSpecs.LABEL_COMPONENT_GAP_ROWSPEC,
-				RowSpec.decode("default:grow"),}));
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				RowSpec.decode("fill:default:grow"),
+				FormSpecs.UNRELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,
+				FormSpecs.RELATED_GAP_ROWSPEC,}));
+		
+		JScrollPane scrollPane_1 = new JScrollPane();
+		panelKline.add(scrollPane_1, "1, 1, 16, 2, fill, fill");
+		
+		klogTable = new JTable();
+		klogTable.setModel(new KLogMessageTableModel());
+		klogTable.getColumnModel().getColumn(0).setPreferredWidth(30);
+		klogTable.getColumnModel().getColumn(1).setPreferredWidth(20);
+		klogTable.getColumnModel().getColumn(2).setPreferredWidth(370);
+		scrollPane_1.setViewportView(klogTable);
+		
+		JLabel lblData = new JLabel("Data:");
+		panelKline.add(lblData, "2, 4, right, default");
+		
+		txtkdata = new JTextField();
+		txtkdata.setEnabled(false);
+		txtkdata.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+			}
+		});
+		panelKline.add(txtkdata, "4, 4, fill, default");
+		txtkdata.setColumns(10);
+		
+		JLabel lblChecksum = new JLabel("Checksum:");
+		panelKline.add(lblChecksum, "6, 4, right, default");
+		
+		txtkCs = new JTextField();
+		txtkCs.setEnabled(false);
+		txtkCs.setEditable(false);
+		panelKline.add(txtkCs, "8, 4, left, default");
+		txtkCs.setColumns(2);
+		
+		cbkmode = new JComboBox();
+		cbkmode.setEnabled(false);
+		cbkmode.setModel(new DefaultComboBoxModel(CommonUtils.KProtos.values()));
+		panelKline.add(cbkmode, "10, 4, fill, default");
+		
+		btnActive = new JButton("Active");
+		btnActive.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (btnActive.getText().equals("Active")) {
+					if (MainFrame.this.KObj==null) {
+						MainFrame.this.KObj = new KProtocols();
+						MainFrame.this.CANObj.addKLineMessageListener(MainFrame.this.KObj);
+					}
+					if (MainFrame.this.KObj.ActiveKLine((KProtos) MainFrame.this.cbkmode.getSelectedItem())==0) {
+						MainFrame.this.btnActive.setText("DeActive");
+						MainFrame.this.btnkSend.setEnabled(true);
+						JOptionPane.showMessageDialog(MainFrame.this,"K Line Activated successfully.","Info", JOptionPane.INFORMATION_MESSAGE);
+					} else {
+						JOptionPane.showMessageDialog(MainFrame.this,"K Line Activated Failed.","Error", JOptionPane.ERROR_MESSAGE);
+					}
+				} else {
+					MainFrame.this.KObj.DeActiveKLine();
+					MainFrame.this.btnActive.setText("Active");
+					MainFrame.this.btnkSend.setEnabled(false);
+					JOptionPane.showMessageDialog(MainFrame.this,"K Line Disconnected.","Info", JOptionPane.INFORMATION_MESSAGE);
+				}
+				
+				
+			}
+		});
+		btnActive.setEnabled(false);
+		panelKline.add(btnActive, "14, 4");
+		
+		btnkSend = new JButton("Send");
+		btnkSend.setEnabled(false);
+		panelKline.add(btnkSend, "16, 4");
 		
 		JPanel panelSAE = new JPanel();
 		tabbedPane.addTab("J1850", null, panelSAE, null);
