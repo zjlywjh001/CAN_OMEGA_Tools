@@ -33,10 +33,12 @@ import me.jarviswang.canomega.commons.CANMessageListener;
 import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
+import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
+import me.jarviswang.canomega.models.FuzzMessage;
 import me.jarviswang.canomega.models.LogMessage;
 import me.jarviswang.canomega.models.LogMessageTableModel;
 import me.jarviswang.canomega.models.MonitorMessageTableModel;
@@ -79,7 +81,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 
-public class MainFrame extends JFrame implements CANMessageListener {
+public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageListener {
 
 	private JPanel MainPanel;
 	private JTextField tFBaudRate;
@@ -215,14 +217,25 @@ public class MainFrame extends JFrame implements CANMessageListener {
 				} else {
 					FuzzingtoolWindow = new CANFuzzer(MainFrame.this);
 					FuzzingtoolWindow.setCANObj(MainFrame.this.CANObj);
+					if (MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN250Kbps_11bits
+							|| MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+						FuzzingtoolWindow.settxtId("001");
+					} else {
+						FuzzingtoolWindow.settxtId("00000001");
+					}
+					MainFrame.this.CANObj.addFuzzMessageListener(FuzzingtoolWindow);
 					MainFrame.this.tffuzzId = FuzzingtoolWindow.gettfFuzzId();
 					MainFrame.this.ChangeIdFieldByProtocol(MainFrame.this.CANObj.getCurrentProto());
+					MainFrame.this.CANObj.addFuzzMessageListener(MainFrame.this);
 					FuzzingtoolWindow.setVisible(true);
 					FuzzingtoolWindow.getCloseButton().addActionListener(new ActionListener() {
 						public void actionPerformed(ActionEvent e) {
 							int resp = JOptionPane.showConfirmDialog(FuzzingtoolWindow, "Sure to stop fuzzing and quit?","Warning", JOptionPane.YES_NO_OPTION);
 							if (resp==0)
 							{
+								MainFrame.this.CANObj.StopFuzzing();
+								MainFrame.this.CANObj.removeFuzzMessageListener(MainFrame.this);
+								MainFrame.this.CANObj.removeFuzzMessageListener(FuzzingtoolWindow);
 								MainFrame.this.FuzzingtoolWindow.dispose();
 								MainFrame.this.tffuzzId = null;
 							}
@@ -235,6 +248,9 @@ public class MainFrame extends JFrame implements CANMessageListener {
 							int resp = JOptionPane.showConfirmDialog(FuzzingtoolWindow, "Sure to stop fuzzing and quit?","Warning", JOptionPane.YES_NO_OPTION);
 							if (resp==0)
 							{
+								MainFrame.this.CANObj.StopFuzzing();
+								MainFrame.this.CANObj.removeFuzzMessageListener(MainFrame.this);
+								MainFrame.this.CANObj.removeFuzzMessageListener(FuzzingtoolWindow);
 								MainFrame.this.FuzzingtoolWindow.dispose();
 								MainFrame.this.tffuzzId = null;
 							}
@@ -341,6 +357,7 @@ public class MainFrame extends JFrame implements CANMessageListener {
 		cbMode.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
 				if (e.getStateChange() == ItemEvent.SELECTED) {
+					
 					switch (CommonUtils.state) {
 					case 0: break;
 					case 1:
@@ -447,6 +464,12 @@ public class MainFrame extends JFrame implements CANMessageListener {
 							JOptionPane.showMessageDialog(MainFrame.this, "Port Busy.Open Port Failed.","Error", JOptionPane.ERROR_MESSAGE);
 							break;
 						case 2:
+							try {
+								CommonUtils.serialPort.closePort();
+							} catch (SerialPortException e1) {
+								// TODO Auto-generated catch block
+								e1.printStackTrace();
+							}
 							JOptionPane.showMessageDialog(MainFrame.this, "Device no Response.Please check your SerialPort/Baudrate.","Error", JOptionPane.ERROR_MESSAGE);
 							break;
 						default:
@@ -1069,6 +1092,9 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	}
 	
 	public void ChangeIdFieldByProtocol(CANProtos newProto) {
+		if (newProto==lastProto) {
+			return ;
+		}
 		if (newProto == CommonUtils.CANProtos.CAN250Kbps_11bits 
 				|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
 			String strId = txtId.getText();
@@ -1240,6 +1266,18 @@ public class MainFrame extends JFrame implements CANMessageListener {
 	@Override
 	public void receiveCANMessage(CANMessage msg) {
 		 this.log(new LogMessage(msg, null, MessageType.IN, System.currentTimeMillis() - this.baseTimestamp));
+		
+	}
+
+	@Override
+	public void receiveFuzzMessage(FuzzMessage msg) {
+		this.log(new LogMessage((CANMessage)msg, null, MessageType.OUT, System.currentTimeMillis() - this.baseTimestamp));
+		
+	}
+
+	@Override
+	public void finishFuzz() {
+		// ignore
 		
 	}
 

@@ -2,8 +2,10 @@ package me.jarviswang.canomega.protocols;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
@@ -14,7 +16,9 @@ import me.jarviswang.canomega.commons.CANMessageListener;
 import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
+import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.models.CANMessage;
+import me.jarviswang.canomega.models.FuzzMessage;
 
 public class CANProtocols implements SerialPortEventListener {
 	
@@ -22,6 +26,7 @@ public class CANProtocols implements SerialPortEventListener {
 	private StringBuilder incomingMessage = new StringBuilder();
 	protected ArrayList<CANMessageListener> listeners = new ArrayList<CANMessageListener>();
 	protected LinkedList<CANMessage> TXFIFO = new LinkedList<CANMessage>();
+	protected List<FuzzMessageListener> fuzzlisteners = (List<FuzzMessageListener>) Collections.synchronizedList(new ArrayList<FuzzMessageListener>());//new ArrayList<FuzzMessageListener>();
 	
 	public CANProtocols() {
 		CommonUtils.state = 0;
@@ -138,7 +143,7 @@ public class CANProtocols implements SerialPortEventListener {
 		if (event.isRXCHAR() && (event.getEventValue()>0)) {
 			try {
 				byte[] arrayOfByte1 = CommonUtils.serialPort.readBytes();
-				System.out.println(Arrays.toString(arrayOfByte1));
+				//System.out.println(Arrays.toString(arrayOfByte1));
 				for (int k:arrayOfByte1) {
 					if ((k==13) && (this.incomingMessage.length()>0)) {
 						String str = this.incomingMessage.toString();
@@ -154,7 +159,18 @@ public class CANProtocols implements SerialPortEventListener {
 							this.TXFIFO.removeFirst();
 							this.sendFirstTXFIFIOMessage();
 						} else if (m==103 || m==71) {
-							CANMessage msg = new CANMessage(str);
+							FuzzMessage msg = new FuzzMessage(str);
+							Iterator It = this.fuzzlisteners.iterator();
+							while (It.hasNext()) {
+								FuzzMessageListener msglistener = (FuzzMessageListener)It.next();
+								msglistener.receiveFuzzMessage(msg);
+							}
+						} else if (m==117) {
+							Iterator It = this.fuzzlisteners.iterator();
+							while (It.hasNext()) {
+								FuzzMessageListener msglistener = (FuzzMessageListener)It.next();
+								msglistener.finishFuzz();
+							}
 						}
 						this.incomingMessage.setLength(0);
 					} else if (k == 7) {
@@ -258,6 +274,14 @@ public class CANProtocols implements SerialPortEventListener {
 	  
 	public void removeMessageListener(CANMessageListener paramCANMessageListener) {
 		this.listeners.remove(paramCANMessageListener);
+  	}
+	
+	public void addFuzzMessageListener(FuzzMessageListener l) {
+		this.fuzzlisteners.add(l);
+    }
+	  
+	public void removeFuzzMessageListener(FuzzMessageListener l) {
+		this.fuzzlisteners.remove(l);
   	}
 
 	

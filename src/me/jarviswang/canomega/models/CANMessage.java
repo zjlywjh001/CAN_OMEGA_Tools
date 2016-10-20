@@ -65,6 +65,7 @@ public class CANMessage {
 		switch (j) {
 		case 114:
 			this.rtr = true;
+		case 103:
 		case 116:
 		default:
 			try {
@@ -79,6 +80,7 @@ public class CANMessage {
 			break;
 		case 82:
 			this.rtr = true;
+		case 71:
 		case 84:
 			try {
 				this.id = Integer.parseInt(dataString.substring(i,i+8),16);

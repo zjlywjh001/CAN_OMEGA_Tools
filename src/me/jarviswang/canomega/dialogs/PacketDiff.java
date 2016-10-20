@@ -46,13 +46,15 @@ public class PacketDiff extends JDialog {
 	 */
 	public PacketDiff() {
 		setAlwaysOnTop(true);
-		setTitle("Packet Diff Tool");
+		setTitle("CAN Packet Diff Tool");
 		setBounds(100, 100, 766, 540);
 		getContentPane().setLayout(new FormLayout(new ColumnSpec[] {
-				ColumnSpec.decode("750px"),},
+				ColumnSpec.decode("750px:grow"),},
 			new RowSpec[] {
-				RowSpec.decode("454px"),
-				RowSpec.decode("33px"),}));
+				RowSpec.decode("457px:grow"),
+				RowSpec.decode("37px"),
+				FormSpecs.RELATED_GAP_ROWSPEC,
+				FormSpecs.DEFAULT_ROWSPEC,}));
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, "1, 1, fill, fill");
 		contentPanel.setLayout(new FormLayout(new ColumnSpec[] {

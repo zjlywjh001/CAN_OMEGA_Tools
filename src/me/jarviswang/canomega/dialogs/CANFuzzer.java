@@ -18,7 +18,9 @@ import com.jgoodies.forms.layout.RowSpec;
 
 import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
+import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.frames.MainFrame;
+import me.jarviswang.canomega.models.FuzzMessage;
 import me.jarviswang.canomega.models.LogMessage.MessageType;
 import me.jarviswang.canomega.protocols.CANProtocols;
 
@@ -43,7 +45,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
+public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzMessageListener {
 
 	private final JPanel contentPanel = new JPanel();
 	private JTextField txtId;
@@ -113,6 +115,7 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
 	 * Create the dialog.
 	 */
 	public CANFuzzer(Object Parent) {
+		setResizable(false);
 		
 		if (Parent!=null) {
 			this.parentwindow = Parent;
@@ -419,7 +422,7 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
 			contentPanel.add(spinDLC, "12, 4, 3, 1");
 		}
 		{
-			lblOrder = new JLabel("Order:");
+			lblOrder = new JLabel("Fuzz Order:");
 			contentPanel.add(lblOrder, "16, 4, 3, 1, right, default");
 		}
 		{
@@ -765,7 +768,7 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
 					}
 				}
 			});
-			tfPeriod.setText("10000");
+			tfPeriod.setText("100000");
 			contentPanel.add(tfPeriod, "22, 22, 3, 1, fill, default");
 			tfPeriod.setColumns(10);
 		}
@@ -993,6 +996,10 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
 		this.CANObj.setFuzzer(fuzzConfig);
 		return 0;
 	}
+	
+	public void settxtId(String strId) {
+		this.txtId.setText(strId);
+	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {
@@ -1069,5 +1076,25 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener {
 		}
 		
 	}
+
+	@Override
+	public void receiveFuzzMessage(FuzzMessage msg) {
+		String currentps = "";
+		byte[] currentdata = msg.getData();
+		for (int i=0;i<currentdata.length;i++) {
+			currentps = currentps.concat(String.format("%02X", currentdata[i]));
+		}
+		this.txtProcess.setText(currentps);
+	}
+
+	@Override
+	public void finishFuzz() {
+		this.btnPause.setText("Pause");
+		this.okButton.setText("Start");
+		this.btnPause.setEnabled(false);
+		((MainFrame)this.parentwindow).log("Fuzzing Finished...", MessageType.INFO);
+	}
+	
+	
 
 }
