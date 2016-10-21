@@ -805,9 +805,10 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzM
 					public void actionPerformed(ActionEvent e) {
 						if (okButton.getText().equals("Start")) {
 							if (CANFuzzer.this.CANObj !=null && CommonUtils.state!=0) {
-								okButton.setText("Stop");
-								btnPause.setEnabled(true);
-								CANFuzzer.this.setFuzzConfig();
+								if (CANFuzzer.this.setFuzzConfig()==0) {
+									okButton.setText("Stop");
+									btnPause.setEnabled(true);
+								}
 							} else {
 								JOptionPane.showMessageDialog(CANFuzzer.this, "Connect state error.","Error", JOptionPane.ERROR_MESSAGE);
 							}
@@ -904,6 +905,20 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzM
 		String todata1 = this.tftoData1.getText();
 		String todata0 = this.tftoData0.getText();
 		String[] dataTo = new String[]{todata7,todata6,todata5,todata4,todata3,todata2,todata1,todata0};
+		for (int i=0;i<DLC;i++) {
+			try {
+				int df = Integer.parseInt(dataFrom[i],16);
+				int to = Integer.parseInt(dataTo[i],16);
+				if (to<df) {
+					JOptionPane.showMessageDialog(CANFuzzer.this, "Every byte in 'To' must be greater than 'From' or equal.","Error", JOptionPane.ERROR_MESSAGE);
+					return -1;
+				}
+			} catch (StringIndexOutOfBoundsException e1) {
+				return -1;
+			} catch (NumberFormatException e2) {
+				return -2;
+			}
+		}
 		for (int i = 0; i < DLC; i++) {
 			if (dataFrom[i].length()==0) {
 				dataFrom[i] = "0";

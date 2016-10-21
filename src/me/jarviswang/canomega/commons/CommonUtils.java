@@ -6,7 +6,7 @@ import jssc.SerialPortTimeoutException;
 
 public class CommonUtils {
 	
-	public static String version="0.1";
+	public static String version="0.9-Alpha";
 	public static int state = 0; //connect state 0:disconnected 1:CAN connected 2:K-Line Connected
 	//3 SAE J1850 Connected
 	public static int protoSelected = 0;

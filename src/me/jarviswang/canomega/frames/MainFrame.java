@@ -35,12 +35,16 @@ import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
+import me.jarviswang.canomega.commons.KLineMessageListener;
 import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.FuzzMessage;
+import me.jarviswang.canomega.models.KLogMessage;
+import me.jarviswang.canomega.models.KLogMessage.KMessageType;
 import me.jarviswang.canomega.models.KLogMessageTableModel;
+import me.jarviswang.canomega.models.KMessage;
 import me.jarviswang.canomega.models.LogMessage;
 import me.jarviswang.canomega.models.LogMessageTableModel;
 import me.jarviswang.canomega.models.MonitorMessageTableModel;
@@ -84,7 +88,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 
-public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageListener {
+public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageListener,KLineMessageListener {
 
 	private JPanel MainPanel;
 	private JTextField tFBaudRate;
@@ -431,6 +435,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 					}
 					switch (CommonUtils.protoSelected) {
 					case 0:
+					case 1:
+					case 2:
 						if (CANObj == null) {
 							CANObj = new CANProtocols();
 						}
@@ -459,6 +465,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 							}
 							CommonUtils.state = 1;
 							CANObj.addMessageListener(MainFrame.this);
+							CANObj.addKLineMessageListener(MainFrame.this);
 							MainFrame.this.log("Connected to CANOmega (FW"+CommonUtils.firmwareVersion+"/HW"+CommonUtils.hardwareVersion+
 									", SN: "+CommonUtils.serialNumber+")", MessageType.INFO);
 							if (MainFrame.this.baseTimestamp == 0L) {
@@ -466,8 +473,6 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						    }
 						}
 						break;
-					case 1:break;
-					case 2:break;
 					default:
 						JOptionPane.showMessageDialog(MainFrame.this, "Invalid Protocol Selected.","Error", JOptionPane.ERROR_MESSAGE);
 					}
@@ -495,10 +500,20 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				} else {
 					switch (CommonUtils.protoSelected) {
 					case 0:
+					case 1:
+					case 2:
 						if(CANObj!=null) {
+							KObj.DeActiveKLine();
 							CANObj.closeCANChannel();
 							CANObj.disconnect();
+							if (FuzzingtoolWindow!=null) {
+								MainFrame.this.CANObj.removeFuzzMessageListener(MainFrame.this);
+								MainFrame.this.CANObj.removeFuzzMessageListener(FuzzingtoolWindow);
+								MainFrame.this.FuzzingtoolWindow.dispose();
+								MainFrame.this.tffuzzId = null;
+							}
 							CANObj.removeMessageListener(MainFrame.this);
+							CANObj.removeKLineMessageListener(MainFrame.this);
 							CANObj = null;
 						}
 						btnConnect.setText("Connect");
@@ -521,14 +536,13 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						txtkCs.setEnabled(false);
 						cbkmode.setEnabled(false);
 						btnActive.setEnabled(false);
+						btnActive.setText("Active");
 						btnkSend.setEnabled(false);
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
 						txtId.setText("001");
 						break;
-					case 1: break;
-					case 2: break;
 					default: break;
 					}
 				}
@@ -541,8 +555,10 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			public void actionPerformed(ActionEvent e) {
 				LogMessageTableModel ltm = (LogMessageTableModel) MainFrame.this.Logtable.getModel();
 				MonitorMessageTableModel mmtm = (MonitorMessageTableModel) MainFrame.this.difftoolWindow.getmonitorTable().getModel();
+				KLogMessageTableModel kltm = (KLogMessageTableModel) MainFrame.this.klogTable.getModel();
 				ltm.clear();
 				mmtm.clear();
+				kltm.clear();
 				MainFrame.this.MonitorBuffer.clear();
 				MainFrame.this.baseTimestamp = System.currentTimeMillis();
 			}
@@ -1023,10 +1039,56 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		panelKline.add(lblData, "2, 4, right, default");
 		
 		txtkdata = new JTextField();
+		txtkdata.addFocusListener(new FocusAdapter() {
+			@Override
+			public void focusLost(FocusEvent e) {
+				String content = txtkdata.getText();
+				String ok = "";
+				if (content.length()==0) {
+					return ;
+				}
+				for (int i = 0;i<content.length();i++) {
+					char ch = content.charAt(i);
+					if (((ch>=48 && ch <=57) 
+							|| (ch>=97 && ch<=102)
+							|| (ch>=65 && ch<=70))) {
+						ok = ok.concat(content.substring(i, i+1));
+					}
+				}
+				if (ok.length()==0) {
+					return ;
+				}
+				if (ok.length()%2!=0) {
+					ok = "0" + ok;
+				}
+				int sum = 0;
+				for (int i=0;i<ok.length();i = i +2) {
+					sum = sum + Integer.parseInt(ok.substring(i, i+2),16);
+					sum = sum%256;
+				}
+				txtkdata.setText(ok);
+				txtkCs.setText(String.format("%02X", sum));
+				
+			}
+		});
 		txtkdata.setEnabled(false);
 		txtkdata.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
+				int inputkey = e.getKeyChar();
+				if (CANObj == null) {
+					e.consume();
+					return ;
+				}
+				if (inputkey == 10 || inputkey == 13) {
+					e.consume();
+				} else {
+					if (!((inputkey>=48 && inputkey <=57) 
+							|| (inputkey>=97 && inputkey<=102)
+							|| (inputkey>=65 && inputkey<=70))) {
+						e.consume();
+					}
+				}
 			}
 		});
 		panelKline.add(txtkdata, "4, 4, fill, default");
@@ -1075,6 +1137,21 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		panelKline.add(btnActive, "14, 4");
 		
 		btnkSend = new JButton("Send");
+		btnkSend.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String pack2send = "k";
+				if (cbkmode.getSelectedItem()==CommonUtils.KProtos.KWP2000_Fast_Init) {
+					pack2send += "k";
+					String data =  txtkdata.getText() + txtkCs.getText();
+					pack2send += String.format("%02X", data.length()/2);
+					pack2send += data;
+				}
+				KMessage kmsg = new KMessage("k"+pack2send.substring(4));
+				MainFrame.this.Klog(new KLogMessage(kmsg, KMessageType.OUT, System.currentTimeMillis() - MainFrame.this.baseTimestamp));
+				System.out.println("K Line send: "+pack2send);
+				MainFrame.this.KObj.SendKLineMessage(pack2send);
+			}
+		});
 		btnkSend.setEnabled(false);
 		panelKline.add(btnkSend, "16, 4");
 		
@@ -1365,6 +1442,20 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		default:break;
 		}
 	}
+	
+	public void Klog(KLogMessage msg)
+	  {
+		KLogMessageTableModel klmt = (KLogMessageTableModel)this.klogTable.getModel();
+	    klmt.addMessage(msg);
+	    try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	    if (this.tglbtnFollow.isSelected()) {
+	      this.klogTable.scrollRectToVisible(this.klogTable.getCellRect(klmt.getRowCount() - 1, 0, false));
+	    }
+	  }
 
 
 	@Override
@@ -1383,6 +1474,14 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	public void finishFuzz() {
 		// ignore
 		
+	}
+
+	@Override
+	public void receiveKLineMessage(String msg) {
+		if (msg.charAt(0)=='k') {
+			KMessage kmsg = new KMessage(msg);
+			this.Klog(new KLogMessage(kmsg, KMessageType.IN, System.currentTimeMillis() - this.baseTimestamp));
+		}
 	}
 
 }

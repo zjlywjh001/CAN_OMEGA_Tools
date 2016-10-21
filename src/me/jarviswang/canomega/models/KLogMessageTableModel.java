@@ -12,9 +12,7 @@ public class KLogMessageTableModel implements TableModel {
 	private final String[] titles = {"Time (ms)", "Type", "Data"};
 	@SuppressWarnings("rawtypes")
 	private final Class[] classes = {String.class, ImageIcon.class,String.class};
-	private ImageIcon[] icons = { new ImageIcon(LogMessageTableModel.class.getResource("/res/icons/info.png")),
-			new ImageIcon(LogMessageTableModel.class.getResource("/res/icons/error.png")), 
-			new ImageIcon(LogMessageTableModel.class.getResource("/res/icons/receive.png")), 
+	private ImageIcon[] icons = { new ImageIcon(LogMessageTableModel.class.getResource("/res/icons/receive.png")), 
 			new ImageIcon(LogMessageTableModel.class.getResource("/res/icons/send.png")) };
 	private final ArrayList<TableModelListener> listeners = new ArrayList<TableModelListener>();
 	private final ArrayList<KLogMessage> messages = new ArrayList<KLogMessage>();

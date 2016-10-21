@@ -145,7 +145,7 @@ public class CANProtocols implements SerialPortEventListener {
 		if (event.isRXCHAR() && (event.getEventValue()>0)) {
 			try {
 				byte[] arrayOfByte1 = CommonUtils.serialPort.readBytes();
-				System.out.println(Arrays.toString(arrayOfByte1));
+				//System.out.println(Arrays.toString(arrayOfByte1));
 				for (int k:arrayOfByte1) {
 					if ((k==13) && (this.incomingMessage.length()>0)) {
 						String str = this.incomingMessage.toString();
@@ -173,7 +173,7 @@ public class CANProtocols implements SerialPortEventListener {
 								FuzzMessageListener msglistener = (FuzzMessageListener)It.next();
 								msglistener.finishFuzz();
 							}
-						} else if (m==111) {
+						} else if (m==111 || m==107) {
 							Iterator It = this.klisteners.iterator();
 							while (It.hasNext()) {
 								KLineMessageListener msglistener = (KLineMessageListener)It.next();

@@ -25,9 +25,9 @@ public class KMessage {
 		}
 		int datalen = rawdata.length()/2;
 		this.data = new byte[datalen];
-		for (int i = 0 ; i < datalen;i=i+2) {
+		for (int i = 0 ; i < datalen;i++) {
 			try {
-				this.data[i] = (byte) Integer.parseInt(rawdata.substring(i,i+1),16);
+				this.data[i] = (byte) Integer.parseInt(rawdata.substring(2*i,2*i+2),16);
 			} catch (StringIndexOutOfBoundsException e1) {
 				this.data[i] = 0;
 			} catch (NumberFormatException e2) {
