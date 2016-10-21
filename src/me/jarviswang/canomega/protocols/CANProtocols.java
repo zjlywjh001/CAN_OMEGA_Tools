@@ -17,6 +17,7 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
+import me.jarviswang.canomega.commons.JMessageListener;
 import me.jarviswang.canomega.commons.KLineMessageListener;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.FuzzMessage;
@@ -29,7 +30,8 @@ public class CANProtocols implements SerialPortEventListener {
 	protected LinkedList<CANMessage> TXFIFO = new LinkedList<CANMessage>();
 	protected List<FuzzMessageListener> fuzzlisteners = (List<FuzzMessageListener>) Collections.synchronizedList(new ArrayList<FuzzMessageListener>());
 	protected List<KLineMessageListener> klisteners = (List<KLineMessageListener>) Collections.synchronizedList(new ArrayList<KLineMessageListener>());
-	
+	protected List<JMessageListener> jlisteners = (List<JMessageListener>) Collections.synchronizedList(new ArrayList<JMessageListener>());
+
 	public CANProtocols() {
 		CommonUtils.state = 0;
 		
@@ -145,7 +147,7 @@ public class CANProtocols implements SerialPortEventListener {
 		if (event.isRXCHAR() && (event.getEventValue()>0)) {
 			try {
 				byte[] arrayOfByte1 = CommonUtils.serialPort.readBytes();
-				//System.out.println(Arrays.toString(arrayOfByte1));
+				System.out.println(Arrays.toString(arrayOfByte1));
 				for (int k:arrayOfByte1) {
 					if ((k==13) && (this.incomingMessage.length()>0)) {
 						String str = this.incomingMessage.toString();
@@ -178,6 +180,12 @@ public class CANProtocols implements SerialPortEventListener {
 							while (It.hasNext()) {
 								KLineMessageListener msglistener = (KLineMessageListener)It.next();
 								msglistener.receiveKLineMessage(str);
+							}
+						} else if (m==106) {
+							Iterator It = this.jlisteners.iterator();
+							while (It.hasNext()) {
+								JMessageListener msglistener = (JMessageListener)It.next();
+								msglistener.receiveJMessage(str);
 							}
 						}
 						this.incomingMessage.setLength(0);
@@ -298,6 +306,14 @@ public class CANProtocols implements SerialPortEventListener {
 	  
 	public void removeKLineMessageListener(KLineMessageListener l) {
 		this.klisteners.remove(l);
+  	}
+	
+	public void addJMessageListener(JMessageListener l) {
+		this.jlisteners.add(l);
+    }
+	  
+	public void removeJMessageListener(JMessageListener l) {
+		this.jlisteners.remove(l);
   	}
 
 	

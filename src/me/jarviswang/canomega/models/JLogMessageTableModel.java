@@ -7,17 +7,17 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
-public class KLogMessageTableModel implements TableModel {
+public class JLogMessageTableModel implements TableModel {
 	
 	private final String[] titles = {"Time (ms)", "Type", "Data"};
 	@SuppressWarnings("rawtypes")
 	private final Class[] classes = {String.class, ImageIcon.class,String.class};
-	private ImageIcon[] icons = { new ImageIcon(KLogMessageTableModel.class.getResource("/res/icons/receive.png")), 
-			new ImageIcon(KLogMessageTableModel.class.getResource("/res/icons/send.png")) };
+	private ImageIcon[] icons = { new ImageIcon(getClass().getResource("/res/icons/receive.png")), 
+			new ImageIcon(getClass().getResource("/res/icons/send.png")) };
 	private final ArrayList<TableModelListener> listeners = new ArrayList<TableModelListener>();
-	private final ArrayList<KLogMessage> messages = new ArrayList<KLogMessage>();
-	
-	public void addMessage(KLogMessage msg) {
+	private final ArrayList<JLogMessage> messages = new ArrayList<JLogMessage>();
+
+	public void addMessage(JLogMessage msg) {
 		int i = this.messages.size();
 		this.messages.add(msg);
 		TableModelEvent evt = new TableModelEvent(this,i,i,TableModelEvent.ALL_COLUMNS,TableModelEvent.INSERT);
@@ -29,8 +29,8 @@ public class KLogMessageTableModel implements TableModel {
 		}
 	}
 	
-	public KLogMessage getMessage(int i) {
-		return (KLogMessage)this.messages.get(i);
+	public JLogMessage getMessage(int i) {
+		return (JLogMessage)this.messages.get(i);
 	}
 	
 	public void clear() {
@@ -55,31 +55,27 @@ public class KLogMessageTableModel implements TableModel {
 
 	@Override
 	public int getColumnCount() {
-		
 		return this.titles.length;
 	}
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		
 		return this.titles[columnIndex];
 	}
 
 	@Override
 	public Class<?> getColumnClass(int columnIndex) {
-		
 		return this.classes[columnIndex];
 	}
 
 	@Override
 	public boolean isCellEditable(int rowIndex, int columnIndex) {
-
 		return false;
 	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		KMessage msg = (this.messages.get(rowIndex)).getKmsg();
+		JMessage msg = (this.messages.get(rowIndex)).getKmsg();
 		if (msg == null) {
 			return "";
 		}
@@ -104,21 +100,18 @@ public class KLogMessageTableModel implements TableModel {
 
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		
 		throw new UnsupportedOperationException("Not supported!");
 		
 	}
 
 	@Override
 	public void addTableModelListener(TableModelListener l) {
-
 		this.listeners.add(l);
 		
 	}
 
 	@Override
 	public void removeTableModelListener(TableModelListener l) {
-		
 		this.listeners.remove(l);
 		
 	}

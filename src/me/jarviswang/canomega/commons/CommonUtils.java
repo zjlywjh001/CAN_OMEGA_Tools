@@ -36,6 +36,11 @@ public class CommonUtils {
 	    private FuzzOrder() {}
 	}
 	
+	public static enum JModes {
+		VPW,PWM;
+		private JModes() {}
+	}
+	
 	public static String Transreceive(String data) throws SerialPortException, SerialPortTimeoutException {
 		if (serialPort==null) {
 			return null;
@@ -60,6 +65,32 @@ public class CommonUtils {
 			}
 			localStringBuilder.append((char)arrayOfByte[0]);
 		}
+	}
+	
+	public static int J1850_CRC(int[] buf) {
+		int poly,crc_reg;
+		
+		crc_reg = 0xFF;
+		for (int i = 0; i < buf.length; i++) {
+			for (int j = 0; j < 8; j++) {
+				if ((buf[i]&(1<<(7-j)))!=0) {
+					if ((crc_reg & 0x80)!=0) {
+						poly = 1;
+					} else {
+						poly = 0x1c;
+					}
+					crc_reg = (((crc_reg<<1)|1)^poly)&0xFF;
+				} else {
+					poly = 0;
+					if ((crc_reg & 0x80)!=0) {
+						poly = 0x1d;
+					}
+					crc_reg = ((crc_reg << 1)^poly)&0xFF;
+				}
+			}
+		}
+		
+		return (~crc_reg)&0xFF;	// Return CRC
 	}
 	
 }

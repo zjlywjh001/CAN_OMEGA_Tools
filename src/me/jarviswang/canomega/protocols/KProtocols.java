@@ -9,12 +9,9 @@ import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 
 public class KProtocols implements KLineMessageListener {
 	
-	private KProtos cProto = null;
 	private boolean activated;
-	private StringBuilder incomingMessage = new StringBuilder();
 	
 	public KProtocols() {
-		this.cProto = null;
 		this.activated = false;
 	}
 	
