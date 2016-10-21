@@ -1,5 +1,7 @@
 package me.jarviswang.canomega.commons;
 
+import java.util.Arrays;
+
 import jssc.SerialPort;
 import jssc.SerialPortException;
 import jssc.SerialPortTimeoutException;
@@ -91,6 +93,52 @@ public class CommonUtils {
 		}
 		
 		return (~crc_reg)&0xFF;	// Return CRC
+	}
+	
+	public static int UpdateCRC16(int crc_in, int bt) {  //CRC16 for ymodem
+		int crc = crc_in;
+		int in = bt | 0x100;
+		do{
+			crc = crc <<1;
+			in = in <<1;
+			if ((in&0x100)!=0) crc = crc+1;
+			if ((crc & 0x10000)!=0) crc = crc ^ 0x1021;
+			
+		} while ((in&0x10000) == 0);
+		return crc & 0xFFFF;
+	}
+	
+	public static int Cal_CRC16(byte[] p_data, int size) {
+		int crc = 0;
+		
+		for (int i=0; i<size;i++) {
+			crc = UpdateCRC16(crc, p_data[i]&0x0FF);
+		}
+		
+		crc = UpdateCRC16(crc, 0);
+		crc = UpdateCRC16(crc, 0);
+		
+		return crc&0xFFFF;
+	}
+	
+	
+	//Cut data into 1024-byte Packet
+	public static byte[] Getn_Packet(final byte data[],final int num){  //num>=1;
+		byte[] frame_head = new byte[]{0x02,0x00,(byte)0xFF};
+		frame_head[1] = (byte)(num&0x0FF);
+		frame_head[2] = (byte)(frame_head[1]^0xFF);
+		//String str= CommonUtil.backCMD2String(frame_head);
+		//String[] cmds = str.split("-");
+		//System.out.println("ÐòºÅ"+Arrays.asList(cmds));
+		byte[] pdata = new byte[1024];
+		System.arraycopy(data, (num-1)*1024, pdata, 0, 1024);
+		int crc1 = Cal_CRC16(pdata, pdata.length);
+		byte[] crcb = new byte[]{(byte)(crc1>>8),(byte)(crc1&0x0FF)};
+		byte[] packet = new byte[frame_head.length+1024+2];
+		System.arraycopy(frame_head, 0, packet, 0, frame_head.length);
+		System.arraycopy(pdata, 0, packet, frame_head.length, pdata.length);
+		System.arraycopy(crcb, 0, packet, frame_head.length+pdata.length, 2);
+		return packet;
 	}
 	
 }

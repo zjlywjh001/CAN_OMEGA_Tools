@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
 import javax.swing.JTextField;
 import javax.swing.JButton;
@@ -34,11 +35,13 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
+import me.jarviswang.canomega.commons.FirmwareFileFilter;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.commons.JMessageListener;
 import me.jarviswang.canomega.commons.KLineMessageListener;
 import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.dialogs.CANFuzzer;
+import me.jarviswang.canomega.dialogs.FirmUpDialog;
 import me.jarviswang.canomega.dialogs.PacketDiff;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.FuzzMessage;
@@ -86,6 +89,11 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
@@ -139,6 +147,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private JTextField txtCRC;
 	private JComboBox cbJMode;
 	private JLabel lblMode_1;
+	private byte[] Firmbuffer;
 
 	/**
 	 * Launch the application.
@@ -183,7 +192,16 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		menuBar.add(mnFile);
 		
 		JMenuItem mntmFirmwareUpdate = new JMenuItem("Firmware Update");
-		mntmFirmwareUpdate.setEnabled(false);
+		mntmFirmwareUpdate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (CommonUtils.state == 0) {
+					JOptionPane.showMessageDialog(MainFrame.this, "Please Connect First.","Error", JOptionPane.ERROR_MESSAGE);
+				} else {
+					MainFrame.this.perfomFirmUp();
+				}
+				
+			}
+		});
 		mnFile.add(mntmFirmwareUpdate);
 		
 		JMenuItem mntmExit = new JMenuItem("Exit");
@@ -1624,6 +1642,50 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	      this.JLogTable.scrollRectToVisible(this.JLogTable.getCellRect(jlmt.getRowCount() - 1, 0, false));
 	    }
 	  }
+	
+	public void perfomFirmUp() {
+		JFileChooser jfc=new JFileChooser(); 
+		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY );
+		jfc.setDialogTitle("Choose Firmware File");
+		FirmwareFileFilter ff = new FirmwareFileFilter();
+		jfc.addChoosableFileFilter(ff);
+		jfc.setFileFilter(ff);
+		int res=jfc.showOpenDialog(this);
+		if (res == JFileChooser.APPROVE_OPTION ) {
+			File firmware = jfc.getSelectedFile();
+			if (!(firmware.getName().endsWith(".bin"))) {
+				JOptionPane.showMessageDialog(this, "Invalid firmware type.","Error", JOptionPane.ERROR_MESSAGE);
+				return ;
+			}
+			
+			try {
+				InputStream is = new FileInputStream(firmware);
+				int size = is.available();
+				int padedsize = 0;
+				if (size%1024!=0) {
+					padedsize = (size/1024+1)*1024;
+				}
+				System.out.println("File size:" + size);
+				this.Firmbuffer = new byte[padedsize];
+				is.read(this.Firmbuffer);
+				is.close();
+				for (int i = size;i<padedsize;i++) {
+					this.Firmbuffer[i] = 0x1A;
+				}
+				FirmUpDialog fud = new FirmUpDialog(this);
+				fud.setCANObj(this.CANObj);
+				fud.setVisible(true);
+				fud.doFirmwareUpdate(this.Firmbuffer);
+			} catch (FileNotFoundException e) {
+				JOptionPane.showMessageDialog(this, "Can't Open File.","Error", JOptionPane.ERROR_MESSAGE);
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(this, "Can't Open File.","Error", JOptionPane.ERROR_MESSAGE);
+			}
+			
+		}
+		
+		
+	}
 
 
 	@Override

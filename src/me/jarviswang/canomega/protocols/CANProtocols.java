@@ -281,6 +281,24 @@ public class CANProtocols implements SerialPortEventListener {
 		}
 	}
 	
+	public void PauseEventListener() {
+		try {
+			CommonUtils.serialPort.removeEventListener();
+		} catch (SerialPortException e) {
+			return ;
+		}
+	}
+	
+	public void ResumeEventListener() {
+		try {
+			CommonUtils.serialPort.addEventListener(this);
+		} catch (SerialPortException e) {
+			return ;
+		}
+	}
+	
+	
+	
 	
 	
 	
