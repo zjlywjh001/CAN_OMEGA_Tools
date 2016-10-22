@@ -14,7 +14,7 @@ CAN Fuzzing tool
 Firmware Update   
 
 ## Notice
-Firmware Update Function needs firmware in bin format. 
+Firmware Update Function needs firmware in bin format.    
 If you only have hex file, you can use HEX2BIN tool to convert hex file to bin file.   
 See here: http://www.keil.com/download/docs/7.asp   
 
