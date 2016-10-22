@@ -115,6 +115,7 @@ public class CANProtocols implements SerialPortEventListener {
 	public int closeCANChannel() {
 		int result = 0;
 		try {
+			CommonUtils.serialPort.writeBytes("b\r".getBytes());
 			CommonUtils.serialPort.writeBytes("C\r".getBytes());
 			Thread.sleep(100);
 			CommonUtils.serialPort.removeEventListener();

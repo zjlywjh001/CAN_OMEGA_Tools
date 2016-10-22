@@ -8,7 +8,7 @@ import jssc.SerialPortTimeoutException;
 
 public class CommonUtils {
 	
-	public static String version="0.9-Alpha";
+	public static String version="1.0";
 	public static int state = 0; //connect state 0:disconnected 1:CAN connected 2:K-Line Connected
 	//3 SAE J1850 Connected
 	public static int protoSelected = 0;
@@ -29,7 +29,7 @@ public class CommonUtils {
 	}
 	
 	public static enum KProtos {
-		KWP2000_Fast_Init;
+		KWP2000_Fast_Init,KWP2000_5Baud_Init,ISO9141_5Baud_Init;
 	    private KProtos() {}
 	}
 	

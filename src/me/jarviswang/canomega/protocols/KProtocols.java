@@ -23,6 +23,25 @@ public class KProtocols implements KLineMessageListener {
 				CommonUtils.serialPort.writeBytes("kak\r".getBytes());
 				Thread.sleep(100);
 				break;
+			case KWP2000_5Baud_Init:
+				CommonUtils.serialPort.writeBytes("kaI\r".getBytes());
+				for (int i=0;i<10;i++) {
+					if (activated) {
+						break;
+					}
+					Thread.sleep(1000);
+				}
+				
+				break;
+			case ISO9141_5Baud_Init:
+				CommonUtils.serialPort.writeBytes("kai\r".getBytes());
+				for (int i=0;i<10;i++) {
+					if (activated) {
+						break;
+					}
+					Thread.sleep(1000);
+				}
+				break;
 			}
 		} catch (InterruptedException e) {
 			return -1;
@@ -39,6 +58,7 @@ public class KProtocols implements KLineMessageListener {
 	
 	public void DeActiveKLine() {
 		try {
+			this.activated = false;
 			CommonUtils.serialPort.writeBytes("kd\r".getBytes());
 		} catch (SerialPortException e2) {
 			

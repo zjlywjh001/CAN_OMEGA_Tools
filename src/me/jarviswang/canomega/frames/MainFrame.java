@@ -183,7 +183,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	public MainFrame() {
 		setTitle("CAN Omega tools v"+CommonUtils.version);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 800, 600);
+		setBounds(100, 100, 812, 640);
 		
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
@@ -338,7 +338,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				FormSpecs.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("left:max(37dlu;default)"),
 				FormSpecs.RELATED_GAP_COLSPEC,
-				ColumnSpec.decode("left:max(42dlu;default)"),
+				ColumnSpec.decode("left:50dlu"),
 				FormSpecs.RELATED_GAP_COLSPEC,
 				ColumnSpec.decode("left:max(39dlu;default)"),
 				FormSpecs.RELATED_GAP_COLSPEC,
@@ -366,6 +366,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		MainPanel.add(lblSerialPort, "2, 2, left, default");
 		
 		JComboBox cbSerialPort = new JComboBox();
+		cbSerialPort.setMaximumRowCount(6);
+		cbSerialPort.setEditable(true);
 		MainPanel.add(cbSerialPort, "4, 2, fill, default");
 		cbSerialPort.setModel(new DefaultComboBoxModel(SerialPortList.getPortNames()));
 		
@@ -579,7 +581,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						txtkCs.setEnabled(false);
 						cbkmode.setEnabled(false);
 						btnActive.setEnabled(false);
-						btnActive.setText("Active");
+						btnActive.setText("Activate");
 						btnkSend.setEnabled(false);
 						jdata.setEnabled(false);
 						txtCRC.setEnabled(false);
@@ -1154,16 +1156,16 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		cbkmode.setModel(new DefaultComboBoxModel(CommonUtils.KProtos.values()));
 		panelKline.add(cbkmode, "9, 3, fill, default");
 		
-		btnActive = new JButton("Active");
+		btnActive = new JButton("Activate");
 		btnActive.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (btnActive.getText().equals("Active")) {
+				if (btnActive.getText().equals("Activate")) {
 					if (MainFrame.this.KObj==null) {
 						MainFrame.this.KObj = new KProtocols();
 						MainFrame.this.CANObj.addKLineMessageListener(MainFrame.this.KObj);
 					}
 					if (MainFrame.this.KObj.ActiveKLine((KProtos) MainFrame.this.cbkmode.getSelectedItem())==0) {
-						MainFrame.this.btnActive.setText("DeActive");
+						MainFrame.this.btnActive.setText("DeActivate");
 						MainFrame.this.btnkSend.setEnabled(true);
 						JOptionPane.showMessageDialog(MainFrame.this,"K Line Activated successfully.","Info", JOptionPane.INFORMATION_MESSAGE);
 					} else {
@@ -1171,7 +1173,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 					}
 				} else {
 					MainFrame.this.KObj.DeActiveKLine();
-					MainFrame.this.btnActive.setText("Active");
+					MainFrame.this.btnActive.setText("Activate");
 					MainFrame.this.btnkSend.setEnabled(false);
 					JOptionPane.showMessageDialog(MainFrame.this,"K Line Disconnected.","Info", JOptionPane.INFORMATION_MESSAGE);
 				}
@@ -1186,7 +1188,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		btnkSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String pack2send = "k";
-				if (cbkmode.getSelectedItem()==CommonUtils.KProtos.KWP2000_Fast_Init) {
+				if (true) {
 					pack2send += "k";
 					String data =  txtkdata.getText() + txtkCs.getText();
 					pack2send += String.format("%02X", data.length()/2);
