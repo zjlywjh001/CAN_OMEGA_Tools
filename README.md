@@ -1,5 +1,9 @@
 # CAN_OMEGA_Tools
 A Powerful cross-platform GUI tool for CAN Omega Hardware.   
+This Project is Build with Eclipse & WindowBuilder, please Install them first.   
+See Here:http://www.eclipse.org/windowbuilder/download.php    
+If you got some errors check your Java Build Path Config.   
+
 
 ![image](https://github.com/zjlywjh001/CAN_OMEGA/raw/master/software/CAN%20Omeage%20tools/screenshots/demo.png) 
 

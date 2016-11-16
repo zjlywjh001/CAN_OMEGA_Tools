@@ -191,7 +191,8 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzM
 				public void focusLost(FocusEvent e) {
 					String msgId = txtId.getText();
 					if (CANFuzzer.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN250Kbps_11bits
-							|| CANFuzzer.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+							|| CANFuzzer.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits
+							|| CANFuzzer.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 						while (msgId.length() < 3) {
 							msgId = "0" + msgId;
 						}
@@ -221,7 +222,8 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzM
 					int inputkey = e.getKeyChar();
 					CANProtos proto = CANFuzzer.this.CANObj.getCurrentProto();
 					if ((proto == CommonUtils.CANProtos.CAN500Kbps_11bits
-							|| proto == CommonUtils.CANProtos.CAN250Kbps_11bits) 
+							|| proto == CommonUtils.CANProtos.CAN250Kbps_11bits
+							|| proto == CommonUtils.CANProtos.CAN125Kbps_11bits) 
 							&& txtId.getText().length()>=8 && inputkey!=8) {
 						e.consume();
 						return ;
@@ -856,7 +858,8 @@ public class CANFuzzer extends JDialog implements KeyListener,ItemListener,FuzzM
 		sb.append('f');
 		String msgId = this.txtId.getText();
 		if (this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN250Kbps_11bits
-				|| this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+				|| this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits
+				|| this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 			sb.append('d');
 			while (msgId.length() < 3) {
 				msgId = "0" + msgId;

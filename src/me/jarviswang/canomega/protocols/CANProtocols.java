@@ -74,6 +74,10 @@ public class CANProtocols implements SerialPortEventListener {
 		try {
 			switch (Proto) 
 			{
+			case CAN125Kbps_11bits:
+			case CAN125Kbps_29bits:
+				CommonUtils.Transreceive("S4");
+				break;
 			case CAN500Kbps_11bits:
 			case CAN500Kbps_29bits:
 				CommonUtils.Transreceive("S6");
@@ -115,8 +119,8 @@ public class CANProtocols implements SerialPortEventListener {
 	public int closeCANChannel() {
 		int result = 0;
 		try {
-			CommonUtils.serialPort.writeBytes("b\r".getBytes());
 			CommonUtils.serialPort.writeBytes("C\r".getBytes());
+			CommonUtils.serialPort.writeBytes("b\r".getBytes());
 			Thread.sleep(100);
 			CommonUtils.serialPort.removeEventListener();
 			

@@ -8,7 +8,7 @@ import jssc.SerialPortTimeoutException;
 
 public class CommonUtils {
 	
-	public static String version="1.0";
+	public static String version="1.01";
 	public static int state = 0; //connect state 0:disconnected 1:CAN connected 2:K-Line Connected
 	//3 SAE J1850 Connected
 	public static int protoSelected = 0;
@@ -24,7 +24,7 @@ public class CommonUtils {
 	}
 	    
 	public static enum CANProtos {
-		CAN500Kbps_11bits,CAN500Kbps_29bits,CAN250Kbps_11bits,  CAN250Kbps_29bits;
+		CAN500Kbps_11bits,CAN500Kbps_29bits,CAN250Kbps_11bits,CAN250Kbps_29bits,CAN125Kbps_11bits,CAN125Kbps_29bits;
 	    private CANProtos() {}
 	}
 	

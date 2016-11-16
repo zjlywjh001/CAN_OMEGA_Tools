@@ -265,7 +265,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 					FuzzingtoolWindow = new CANFuzzer(MainFrame.this);
 					FuzzingtoolWindow.setCANObj(MainFrame.this.CANObj);
 					if (MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN250Kbps_11bits
-							|| MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+							|| MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN500Kbps_11bits
+							|| MainFrame.this.CANObj.getCurrentProto() == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 						FuzzingtoolWindow.settxtId("001");
 					} else {
 						FuzzingtoolWindow.settxtId("00000001");
@@ -685,7 +686,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			public void focusLost(FocusEvent e) {
 				String msgId = txtId.getText();
 				if (MainFrame.this.lastProto == CommonUtils.CANProtos.CAN250Kbps_11bits
-						|| MainFrame.this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+						|| MainFrame.this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits
+						|| MainFrame.this.lastProto == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 					while (msgId.length() < 3) {
 						msgId = "0" + msgId;
 					}
@@ -719,7 +721,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				}
 				CANProtos proto = CANObj.getCurrentProto();
 				if ((proto == CommonUtils.CANProtos.CAN500Kbps_11bits
-						|| proto == CommonUtils.CANProtos.CAN250Kbps_11bits) 
+						|| proto == CommonUtils.CANProtos.CAN250Kbps_11bits
+						|| proto == CommonUtils.CANProtos.CAN125Kbps_11bits) 
 						&& txtId.getText().length()>=8 && inputkey!=8) {
 					e.consume();
 					return ;
@@ -1394,7 +1397,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		String data0 = textData0.getText();
 		String[] dataArray = new String[]{data7,data6,data5,data4,data3,data2,data1,data0};
 		if (this.lastProto == CommonUtils.CANProtos.CAN250Kbps_11bits
-				|| this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+				|| this.lastProto == CommonUtils.CANProtos.CAN500Kbps_11bits
+				|| this.lastProto == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 			if (rtr) {
 				sendString += "r";
 			} else {
@@ -1453,7 +1457,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			return ;
 		}
 		if (newProto == CommonUtils.CANProtos.CAN250Kbps_11bits 
-				|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits) {
+				|| newProto == CommonUtils.CANProtos.CAN500Kbps_11bits
+				|| newProto == CommonUtils.CANProtos.CAN125Kbps_11bits) {
 			String strId = txtId.getText();
 			while (strId.length() < 3) {
 				strId = "0" + strId;
