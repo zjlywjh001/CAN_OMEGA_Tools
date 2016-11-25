@@ -502,6 +502,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 								txtCRC.setEnabled(true);
 								cbJMode.setEnabled(true);
 								btnJsend.setEnabled(true);
+							} else {
+								comboProt.setEnabled(true);
 							}
 							CommonUtils.state = 1;
 							CANObj.addMessageListener(MainFrame.this);
