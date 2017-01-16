@@ -17,6 +17,7 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -69,6 +70,7 @@ import javax.swing.DropMode;
 import javax.swing.JToggleButton;
 import javax.swing.table.DefaultTableModel;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.border.LineBorder;
@@ -370,7 +372,21 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		cbSerialPort.setMaximumRowCount(6);
 		cbSerialPort.setEditable(true);
 		MainPanel.add(cbSerialPort, "4, 2, fill, default");
-		cbSerialPort.setModel(new DefaultComboBoxModel(SerialPortList.getPortNames()));
+		String OS_Name = System.getProperty("os.name").toUpperCase();  //Obtain devices list on Mac
+		if (OS_Name.indexOf("MAC")>=0 && OS_Name.indexOf("OS")>=0) {
+			File dir = new File("/dev");
+			File[] files = dir.listFiles();
+			List<String> device_list = new ArrayList<String>();
+			for (int i = 0; i<files.length; i++) {
+				if (files[i].getName().indexOf("tty.SLAB_USBtoUART")>=0) {
+					device_list.add(files[i].getPath());
+				}
+			}
+			String[] port_in_mac = (String[]) ArrayUtils.addAll(SerialPortList.getPortNames(), device_list.toArray());
+			cbSerialPort.setModel(new DefaultComboBoxModel(port_in_mac));
+		} else {
+			cbSerialPort.setModel(new DefaultComboBoxModel(SerialPortList.getPortNames()));
+		}
 		
 		JLabel lblBaudrate = new JLabel("BaudRate:");
 		MainPanel.add(lblBaudrate, "6, 2, left, default");

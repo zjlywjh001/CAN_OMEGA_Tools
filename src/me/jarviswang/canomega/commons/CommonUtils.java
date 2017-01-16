@@ -8,7 +8,7 @@ import jssc.SerialPortTimeoutException;
 
 public class CommonUtils {
 	
-	public static String version="1.01";
+	public static String version="1.1";
 	public static int state = 0; //connect state 0:disconnected 1:CAN connected 2:K-Line Connected
 	//3 SAE J1850 Connected
 	public static int protoSelected = 0;
@@ -129,7 +129,7 @@ public class CommonUtils {
 		frame_head[2] = (byte)(frame_head[1]^0xFF);
 		//String str= CommonUtil.backCMD2String(frame_head);
 		//String[] cmds = str.split("-");
-		//System.out.println("ÐòºÅ"+Arrays.asList(cmds));
+		//System.out.println("ï¿½ï¿½ï¿½"+Arrays.asList(cmds));
 		byte[] pdata = new byte[1024];
 		System.arraycopy(data, (num-1)*1024, pdata, 0, 1024);
 		int crc1 = Cal_CRC16(pdata, pdata.length);
