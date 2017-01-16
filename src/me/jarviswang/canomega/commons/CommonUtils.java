@@ -39,7 +39,7 @@ public class CommonUtils {
 	}
 	
 	public static enum ResistorState {
-		Disabled, _120¦¸;
+		Disabled, _120Î©;
 	    private ResistorState() {}
 	}
 	

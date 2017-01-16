@@ -1071,11 +1071,11 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 					case 1:
 						ResistorState rs = (ResistorState)resistorMode.getSelectedItem();
 						if (MainFrame.this.CANObj!=null) {
-							int res = CANObj.ChangeTerminalResistorState(rs==ResistorState._120¦¸);
+							int res = CANObj.ChangeTerminalResistorState(rs==ResistorState._120Î©);
 							if (res != 0) {
 								JOptionPane.showMessageDialog(MainFrame.this, "Set Terminal Resistor State Failed.","Error", JOptionPane.ERROR_MESSAGE);
 							} else {
-								MainFrame.this.log("Terminal Resistor set as "+(rs==ResistorState._120¦¸?"120-Ohms.":"Open Circuit."),  MessageType.INFO);
+								MainFrame.this.log("Terminal Resistor set as "+(rs==ResistorState._120Î©?"120-Ohms.":"Open Circuit."),  MessageType.INFO);
 							}
 						}
 						break;
