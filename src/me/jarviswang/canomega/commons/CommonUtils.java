@@ -129,7 +129,6 @@ public class CommonUtils {
 		frame_head[2] = (byte)(frame_head[1]^0xFF);
 		//String str= CommonUtil.backCMD2String(frame_head);
 		//String[] cmds = str.split("-");
-		//System.out.println("���"+Arrays.asList(cmds));
 		byte[] pdata = new byte[1024];
 		System.arraycopy(data, (num-1)*1024, pdata, 0, 1024);
 		int crc1 = Cal_CRC16(pdata, pdata.length);
