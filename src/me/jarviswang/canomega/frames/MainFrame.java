@@ -616,6 +616,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
+						resistorMode.setSelectedItem(ResistorState.Disabled);
 						txtId.setText("001");
 						break;
 					default: break;
