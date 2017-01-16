@@ -17,7 +17,6 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
@@ -36,6 +35,7 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
+import me.jarviswang.canomega.commons.CommonUtils.ResistorState;
 import me.jarviswang.canomega.commons.FirmwareFileFilter;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.commons.JMessageListener;
@@ -70,7 +70,6 @@ import javax.swing.DropMode;
 import javax.swing.JToggleButton;
 import javax.swing.table.DefaultTableModel;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.border.LineBorder;
@@ -150,6 +149,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private JComboBox cbJMode;
 	private JLabel lblMode_1;
 	private byte[] Firmbuffer;
+	private JComboBox resistorMode;
 
 	/**
 	 * Launch the application.
@@ -185,7 +185,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	public MainFrame() {
 		setTitle("CAN Omega tools v"+CommonUtils.version);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 812, 640);
+		setBounds(100, 100, 848, 640);
 		
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
@@ -372,21 +372,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		cbSerialPort.setMaximumRowCount(6);
 		cbSerialPort.setEditable(true);
 		MainPanel.add(cbSerialPort, "4, 2, fill, default");
-		String OS_Name = System.getProperty("os.name").toUpperCase();  //Obtain devices list on Mac
-		if (OS_Name.indexOf("MAC")>=0 && OS_Name.indexOf("OS")>=0) {
-			File dir = new File("/dev");
-			File[] files = dir.listFiles();
-			List<String> device_list = new ArrayList<String>();
-			for (int i = 0; i<files.length; i++) {
-				if (files[i].getName().indexOf("tty.SLAB_USBtoUART")>=0) {
-					device_list.add(files[i].getPath());
-				}
-			}
-			String[] port_in_mac = (String[]) ArrayUtils.addAll(SerialPortList.getPortNames(), device_list.toArray());
-			cbSerialPort.setModel(new DefaultComboBoxModel(port_in_mac));
-		} else {
-			cbSerialPort.setModel(new DefaultComboBoxModel(SerialPortList.getPortNames()));
-		}
+		cbSerialPort.setModel(new DefaultComboBoxModel(SerialPortList.getPortNames()));
 		
 		JLabel lblBaudrate = new JLabel("BaudRate:");
 		MainPanel.add(lblBaudrate, "6, 2, left, default");
@@ -518,8 +504,12 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 								txtCRC.setEnabled(true);
 								cbJMode.setEnabled(true);
 								btnJsend.setEnabled(true);
+								
 							} else {
 								comboProt.setEnabled(true);
+							}
+							if (Long.valueOf(CommonUtils.hardwareVersion)>=110) {
+								resistorMode.setEnabled(true);
 							}
 							CommonUtils.state = 1;
 							CANObj.addMessageListener(MainFrame.this);
@@ -606,6 +596,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						txtCRC.setEnabled(false);
 						cbJMode.setEnabled(false);
 						btnJsend.setEnabled(false);
+						resistorMode.setEnabled(false);
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
@@ -678,6 +669,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				FormSpecs.UNRELATED_GAP_COLSPEC,
 				FormSpecs.DEFAULT_COLSPEC,
 				FormSpecs.RELATED_GAP_COLSPEC,
+				ColumnSpec.decode("max(40dlu;default)"),
+				FormSpecs.RELATED_GAP_COLSPEC,
 				FormSpecs.GLUE_COLSPEC,
 				FormSpecs.RELATED_GAP_COLSPEC,
 				FormSpecs.DEFAULT_COLSPEC,},
@@ -687,7 +680,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				RowSpec.decode("39px"),}));
 		
 		JScrollPane scrollPane = new JScrollPane();
-		panelCAN.add(scrollPane, "1, 1, 27, 1, fill, fill");
+		panelCAN.add(scrollPane, "1, 1, 29, 1, fill, fill");
 		
 		Logtable = new JTable();
 		Logtable.setModel(new LogMessageTableModel());
@@ -1068,8 +1061,36 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				MainFrame.this.sendButtonActionPerformed(e);
 			}
 		});
+		
+		resistorMode = new JComboBox();
+		resistorMode.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					switch (CommonUtils.state) {
+					case 0: break;
+					case 1:
+						ResistorState rs = (ResistorState)resistorMode.getSelectedItem();
+						if (MainFrame.this.CANObj!=null) {
+							int res = CANObj.ChangeTerminalResistorState(rs==ResistorState._120¦¸);
+							if (res != 0) {
+								JOptionPane.showMessageDialog(MainFrame.this, "Set Terminal Resistor State Failed.","Error", JOptionPane.ERROR_MESSAGE);
+							} else {
+								MainFrame.this.log("Terminal Resistor set as "+(rs==ResistorState._120¦¸?"120-Ohms.":"Open Circuit."),  MessageType.INFO);
+							}
+						}
+						break;
+					case 2:break;
+					case 3:break;
+					default:break;
+					}
+				}
+			}
+		});
+		resistorMode.setEnabled(false);
+		resistorMode.setModel(new DefaultComboBoxModel(CommonUtils.ResistorState.values()));
+		panelCAN.add(resistorMode, "25, 3, fill, default");
 		btnSend.setEnabled(false);
-		panelCAN.add(btnSend, "27, 3");
+		panelCAN.add(btnSend, "29, 3");
 		
 		JPanel panelKline = new JPanel();
 		tabbedPane.addTab("K-Line", null, panelKline, null);

@@ -264,6 +264,20 @@ public class CANProtocols implements SerialPortEventListener {
 		return 0;
 	}
 	
+	public int ChangeTerminalResistorState(boolean enabled) {
+		try {
+			if (enabled) {
+				CommonUtils.serialPort.writeBytes("a\r".getBytes());
+			} else {
+				CommonUtils.serialPort.writeBytes("A\r".getBytes());
+			}
+			
+		} catch (SerialPortException e) {
+			return -1;
+		}
+		return 0;
+	}
+	
 	public CANProtos getDefaultProtocol() {
 		return CommonUtils.CANProtos.CAN500Kbps_11bits;
 	}
