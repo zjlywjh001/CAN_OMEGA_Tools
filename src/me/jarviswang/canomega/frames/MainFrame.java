@@ -45,6 +45,7 @@ import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.FirmUpDialog;
 import me.jarviswang.canomega.dialogs.PacketDiff;
+import me.jarviswang.canomega.dialogs.PayloadPlayer;
 import me.jarviswang.canomega.models.CANMessage;
 import me.jarviswang.canomega.models.FuzzMessage;
 import me.jarviswang.canomega.models.JLogMessage;
@@ -93,12 +94,14 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
@@ -155,6 +158,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private byte[] Firmbuffer;
 	private JCheckBox resistorMode;
 	private JMenuItem mntmSaveLog;
+	private JMenuItem mntmPayloadPlayer;
+	private Thread playprocess = null;
 
 	/**
 	 * Launch the application.
@@ -249,6 +254,108 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			}
 		});
 		mnAnalysis.add(mntmPacketDiffTool);
+		
+		mntmPayloadPlayer = new JMenuItem("Payload Player");
+		mntmPayloadPlayer.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				PayloadPlayer pp = new PayloadPlayer();
+				pp.setVisible(true);
+				pp.addWindowListener(new WindowAdapter() {
+					@Override
+					public void windowClosing(WindowEvent e) {
+						if (playprocess!=null) {
+							playprocess.interrupt();
+							playprocess = null;
+						}
+					}
+				});
+				pp.getStartButton().addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						pp.getStartButton().setEnabled(false);
+						try {
+							String encoding="UTF-8";
+							File logfile = new File(pp.getLogFilePath());
+							InputStream is = new FileInputStream(logfile);
+							InputStreamReader read = new InputStreamReader(is,encoding);
+							BufferedReader bufferedReader = new BufferedReader(read);
+							String line = null;
+							List<String> lines = new ArrayList<String>();
+							int line_number = 0;
+							while ((line = bufferedReader.readLine()) !=null) {
+								line_number++;
+								if (line_number==1) {
+									String[] spilt_line = line.split(",");
+									if (spilt_line[0].indexOf("Time")==-1) {
+										JOptionPane.showMessageDialog(pp, "Invalid Log File.","Error", JOptionPane.ERROR_MESSAGE);
+										pp.getStartButton().setEnabled(true);
+										return ;
+									}
+									continue;  //ignore first line table header
+								}
+								String[] spilt_line = line.split(",");
+								lines.add(spilt_line[5]);
+							}
+							final List<String> payload = lines;
+							MainFrame.this.baseTimestamp = System.currentTimeMillis();
+							MonitorMessageTableModel mmtm = (MonitorMessageTableModel) MainFrame.this.difftoolWindow.getmonitorTable().getModel();
+							mmtm.clear();
+							MainFrame.this.difftoolWindow.setVisible(true);
+							MainFrame.this.difftoolWindow.getCloseButton().addActionListener(new ActionListener() {
+								@Override
+								public void actionPerformed(ActionEvent e) {
+									MainFrame.this.difftoolWindow.setVisible(false);
+								}
+								
+							});
+							int delaytime = 1000/pp.getSpeed();
+							playprocess = new Thread(new Runnable() {
+								@Override
+								public void run() {
+									try {
+										for (String l:payload) {
+												CANMessage msg = new CANMessage(l);
+												SwingUtilities.invokeLater(new Runnable(){
+					            					@Override
+					            					public void run() {
+					            						MainFrame.this.log(new LogMessage(msg, null, MessageType.IN, System.currentTimeMillis() - MainFrame.this.baseTimestamp));
+					            						if (pp.isPlaytoCAN() && MainFrame.this.CANObj!=null) {
+					            							MainFrame.this.CANObj.send(msg);
+					            							MainFrame.this.log(new LogMessage(msg,null,MessageType.OUT,System.currentTimeMillis() - MainFrame.this.baseTimestamp));
+					            						}
+					            					}
+					            		        });
+												Thread.sleep(delaytime);
+										}
+									} catch (InterruptedException e) {
+										System.out.println("Stop Play");
+										return ;
+									}
+								}
+								
+							});
+							playprocess.start();
+							read.close();
+							pp.getStopButton().addActionListener(new ActionListener() {
+								@Override
+								public void actionPerformed(ActionEvent e) {
+									playprocess.interrupt();
+									pp.getStartButton().setEnabled(true);
+								}
+							});
+						} catch (FileNotFoundException e1) {
+							JOptionPane.showMessageDialog(pp, "Can't Open File.","Error", JOptionPane.ERROR_MESSAGE);
+							pp.getStartButton().setEnabled(true);
+						} catch (IOException e2) {
+							JOptionPane.showMessageDialog(pp, "Can't Open File.","Error", JOptionPane.ERROR_MESSAGE);
+							pp.getStartButton().setEnabled(true);
+							
+						}
+					}
+				});
+				
+			}
+		});
+		mnAnalysis.add(mntmPayloadPlayer);
 		
 		difftoolWindow = new PacketDiff();
 		difftoolWindow.getPauseButton().addChangeListener(new ChangeListener() {
