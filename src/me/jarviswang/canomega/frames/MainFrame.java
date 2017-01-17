@@ -40,6 +40,7 @@ import me.jarviswang.canomega.commons.FirmwareFileFilter;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.commons.JMessageListener;
 import me.jarviswang.canomega.commons.KLineMessageListener;
+import me.jarviswang.canomega.commons.LogFileFilter;
 import me.jarviswang.canomega.dialogs.AboutDialog;
 import me.jarviswang.canomega.dialogs.CANFuzzer;
 import me.jarviswang.canomega.dialogs.FirmUpDialog;
@@ -63,6 +64,7 @@ import me.jarviswang.canomega.protocols.JProtocols;
 import me.jarviswang.canomega.protocols.KProtocols;
 
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.JTabbedPane;
 import javax.swing.DefaultComboBoxModel;
@@ -94,6 +96,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -151,6 +154,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private JLabel lblMode_1;
 	private byte[] Firmbuffer;
 	private JCheckBox resistorMode;
+	private JMenuItem mntmSaveLog;
 
 	/**
 	 * Launch the application.
@@ -205,6 +209,15 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				
 			}
 		});
+		
+		mntmSaveLog = new JMenuItem("Save Log as...");
+		mntmSaveLog.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				MainFrame.this.SaveLogToFile();
+				
+			}
+		});
+		mnFile.add(mntmSaveLog);
 		mnFile.add(mntmFirmwareUpdate);
 		
 		JMenuItem mntmExit = new JMenuItem("Exit");
@@ -656,7 +669,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		tabbedPane.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				int selectedPane = tabbedPane.getSelectedIndex();
-				//CommonUtils.protoSelected = selectedPane;
+				CommonUtils.protoSelected = selectedPane;
 				//System.out.println("Select: "+selectedPane);
 				
 				
@@ -1410,27 +1423,59 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	public void log(String msg,MessageType type) {
 		LogMessageTableModel ltm = (LogMessageTableModel) this.Logtable.getModel();
 		ltm.addMessage(new LogMessage(null,msg,type,System.currentTimeMillis()));
-		try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 		if (this.tglbtnFollow.isSelected()) {
-			this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(ltm.getRowCount() - 1, 0, false));
-		}
+		    new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(10);
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								MainFrame.this.Logtable.scrollRectToVisible(MainFrame.this.Logtable.getCellRect(ltm.getRowCount() - 1, 0, false));
+							}
+					    });
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+		    	
+		    }).start();
+	    }
+//		try {
+//			Thread.sleep(10);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+//		if (this.tglbtnFollow.isSelected()) {
+//			this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(ltm.getRowCount() - 1, 0, false));
+//		}
 	}
 	
 	public void log(LogMessage msg)
 	  {
 	    LogMessageTableModel lmt = (LogMessageTableModel)this.Logtable.getModel();
 	    lmt.addMessage(msg);
-	    try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 	    if (this.tglbtnFollow.isSelected()) {
-	      this.Logtable.scrollRectToVisible(this.Logtable.getCellRect(lmt.getRowCount() - 1, 0, false));
+		    new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(10);
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								MainFrame.this.Logtable.scrollRectToVisible(MainFrame.this.Logtable.getCellRect(lmt.getRowCount() - 1, 0, false));
+							}
+					    });
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+		    	
+		    }).start();
 	    }
 	    if ((msg.getType() == MessageType.OUT) || (msg.getType() == MessageType.IN)) {
 	    	if (this.difftoolWindow.getPauseButton().isSelected()) {
@@ -1691,27 +1736,67 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	public void Klog(KLogMessage msg) {
 		KLogMessageTableModel klmt = (KLogMessageTableModel)this.klogTable.getModel();
 	    klmt.addMessage(msg);
-	    try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 	    if (this.tglbtnFollow.isSelected()) {
-	      this.klogTable.scrollRectToVisible(this.klogTable.getCellRect(klmt.getRowCount() - 1, 0, false));
+		    new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(10);
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								MainFrame.this.klogTable.scrollRectToVisible(MainFrame.this.klogTable.getCellRect(klmt.getRowCount() - 1, 0, false));
+							}
+					    });
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+		    	
+		    }).start();
 	    }
+//	    try {
+//			Thread.sleep(10);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+//	    if (this.tglbtnFollow.isSelected()) {
+//	      this.klogTable.scrollRectToVisible(this.klogTable.getCellRect(klmt.getRowCount() - 1, 0, false));
+//	    }
 	  }
 	
 	public void Jlog(JLogMessage jmsg) {
 		JLogMessageTableModel jlmt = (JLogMessageTableModel)this.JLogTable.getModel();
 		jlmt.addMessage(jmsg);
-	    try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	    if (this.tglbtnFollow.isSelected()) {
-	      this.JLogTable.scrollRectToVisible(this.JLogTable.getCellRect(jlmt.getRowCount() - 1, 0, false));
+		if (this.tglbtnFollow.isSelected()) {
+		    new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(10);
+						SwingUtilities.invokeLater(new Runnable() {
+							@Override
+							public void run() {
+								MainFrame.this.JLogTable.scrollRectToVisible(MainFrame.this.JLogTable.getCellRect(jlmt.getRowCount() - 1, 0, false));
+							}
+					    });
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+		    	
+		    }).start();
 	    }
+//	    try {
+//			Thread.sleep(10);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
+//	    if (this.tglbtnFollow.isSelected()) {
+//	      this.JLogTable.scrollRectToVisible(this.JLogTable.getCellRect(jlmt.getRowCount() - 1, 0, false));
+//	    }
 	  }
 	
 	public void perfomFirmUp() {
@@ -1755,7 +1840,70 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			
 		}
 		
-		
+	}
+	
+	public void SaveLogToFile() {
+		JFileChooser jfc=new JFileChooser(); 
+		jfc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		jfc.setDialogTitle("Save Log to File...");
+		LogFileFilter ff = new LogFileFilter();
+		jfc.addChoosableFileFilter(ff);
+		jfc.setFileFilter(ff);
+		int res=jfc.showOpenDialog(this);
+		if (res == JFileChooser.APPROVE_OPTION ) {
+			File targetfile = jfc.getSelectedFile();
+			if (!(targetfile.getName().endsWith(".csv"))) {
+				targetfile = new File(targetfile.getAbsolutePath()+".csv");
+			}
+			
+			try {
+				FileWriter fw = new FileWriter(targetfile);
+				switch (CommonUtils.protoSelected) {
+				case 0: //Save CAN logs..
+					LogMessageTableModel msgs = (LogMessageTableModel) this.Logtable.getModel(); 
+					List<LogMessage> alllogs = msgs.getAllMessages();
+					String table_head = "Time(ms),Direction,Id,DLC,Data,Send-String\n";
+					fw.write(table_head);
+					for (LogMessage amsg:alllogs) {
+						if (amsg.getType()==MessageType.IN || amsg.getType()==MessageType.OUT) {
+							String aline = amsg.getTimestamp()+",";
+							aline += amsg.getType()+",";
+							CANMessage canmsg = amsg.getCanmsg();
+							if (canmsg.isExtended()) {
+								aline += String.format("%08Xh",canmsg.getId()) + ",";
+							} else {
+								aline += String.format("%03Xh",canmsg.getId()) + ",";
+							}
+							aline += Integer.valueOf(canmsg.getData().length) + ",";
+							String str = "";
+							if (canmsg.isRtr()) {
+								str = "Remote Transmission Request";
+							} else {
+								byte[] arrayOfByte = canmsg.getData();
+								for (int i = 0; i < arrayOfByte.length; i++) {
+									if (i > 0) {
+										str = str.concat(" ");
+									}
+									str = str.concat(String.format("%02X", arrayOfByte[i]));
+								}
+							}
+							aline += str + ",";
+							aline += canmsg.toString() + "\n";
+							fw.write(aline);
+						}
+					}
+					break;
+				case 1:
+					//TODO Save K Line logs..
+				case 2:
+					//TODO Save J180 Logs..
+				}
+				fw.close();
+			} catch (IOException e) {
+				JOptionPane.showMessageDialog(this, "Write File Error!","Error", JOptionPane.ERROR_MESSAGE);
+			}
+			
+		}
 	}
 
 

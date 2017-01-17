@@ -1,6 +1,7 @@
 package me.jarviswang.canomega.models;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.event.TableModelEvent;
@@ -48,6 +49,10 @@ public class LogMessageTableModel implements TableModel {
 			this.listeners.get(j).tableChanged(evt);
 			j++;
 		}
+	}
+	
+	public List<LogMessage> getAllMessages() {
+		return this.messages;
 	}
 	
 	@Override
