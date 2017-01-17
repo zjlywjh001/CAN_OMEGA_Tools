@@ -293,7 +293,11 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 									continue;  //ignore first line table header
 								}
 								String[] spilt_line = line.split(",");
-								lines.add(spilt_line[5]);
+								if (spilt_line[1].equals("IN")) {
+									lines.add("i"+spilt_line[5]);
+								} else {
+									lines.add("o"+spilt_line[5]);
+								}
 							}
 							final List<String> payload = lines;
 							MainFrame.this.baseTimestamp = System.currentTimeMillis();
@@ -313,11 +317,11 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 								public void run() {
 									try {
 										for (String l:payload) {
-												CANMessage msg = new CANMessage(l);
+												CANMessage msg = new CANMessage(l.substring(1));
 												SwingUtilities.invokeLater(new Runnable(){
 					            					@Override
 					            					public void run() {
-					            						MainFrame.this.log(new LogMessage(msg, null, MessageType.IN, System.currentTimeMillis() - MainFrame.this.baseTimestamp));
+					            						MainFrame.this.log(new LogMessage(msg, null, l.substring(0,1).equals("i")?MessageType.IN:MessageType.OUT, System.currentTimeMillis() - MainFrame.this.baseTimestamp));
 					            						if (pp.isPlaytoCAN() && MainFrame.this.CANObj!=null) {
 					            							MainFrame.this.CANObj.send(msg);
 					            							MainFrame.this.log(new LogMessage(msg,null,MessageType.OUT,System.currentTimeMillis() - MainFrame.this.baseTimestamp));
