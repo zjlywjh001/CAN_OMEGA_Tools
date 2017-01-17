@@ -36,7 +36,6 @@ import me.jarviswang.canomega.commons.CommonUtils;
 import me.jarviswang.canomega.commons.CommonUtils.CANProtos;
 import me.jarviswang.canomega.commons.CommonUtils.KProtos;
 import me.jarviswang.canomega.commons.CommonUtils.OpenMode;
-import me.jarviswang.canomega.commons.CommonUtils.ResistorState;
 import me.jarviswang.canomega.commons.FirmwareFileFilter;
 import me.jarviswang.canomega.commons.FuzzMessageListener;
 import me.jarviswang.canomega.commons.JMessageListener;
@@ -151,7 +150,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private JComboBox cbJMode;
 	private JLabel lblMode_1;
 	private byte[] Firmbuffer;
-	private JComboBox resistorMode;
+	private JCheckBox resistorMode;
 
 	/**
 	 * Launch the application.
@@ -461,7 +460,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 									chckbxRtr.setEnabled(true);
 									btnSend.setEnabled(true);
 								}
-									MainFrame.this.log("Changed to "+newMode+" Mode.",  MessageType.INFO);
+								MainFrame.this.log("Changed to "+newMode+" Mode.",  MessageType.INFO);
 								lastMode = newMode;
 							}
 						}
@@ -524,7 +523,13 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 							} else {
 								comboProt.setEnabled(true);
 							}
-							if (Long.valueOf(CommonUtils.hardwareVersion)>=110) {
+							int intver = 0;
+							try {
+								intver = Integer.parseInt(CommonUtils.hardwareVersion,16);
+							} catch (Exception ee) {
+								//ignore 
+							}
+							if (intver>=0x0110) {
 								resistorMode.setEnabled(true);
 							}
 							CommonUtils.state = 1;
@@ -616,7 +621,7 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 						CommonUtils.state = 0;
 						MainFrame.this.log("Disconnected.", MessageType.INFO);
 						comboProt.setSelectedItem(CommonUtils.CANProtos.CAN500Kbps_11bits);
-						resistorMode.setSelectedItem(ResistorState.Disabled);
+						resistorMode.setSelected(false);
 						txtId.setText("001");
 						break;
 					default: break;
@@ -1079,33 +1084,36 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			}
 		});
 		
-		resistorMode = new JComboBox();
+		resistorMode = new JCheckBox("120Ω");
 		resistorMode.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				if (e.getStateChange() == ItemEvent.SELECTED) {
-					switch (CommonUtils.state) {
-					case 0: break;
-					case 1:
-						ResistorState rs = (ResistorState)resistorMode.getSelectedItem();
-						if (MainFrame.this.CANObj!=null) {
-							int res = CANObj.ChangeTerminalResistorState(rs==ResistorState._120Ω);
-							if (res != 0) {
-								JOptionPane.showMessageDialog(MainFrame.this, "Set Terminal Resistor State Failed.","Error", JOptionPane.ERROR_MESSAGE);
-							} else {
-								MainFrame.this.log("Terminal Resistor set as "+(rs==ResistorState._120Ω?"120-Ohms.":"Open Circuit."),  MessageType.INFO);
-							}
+				if (e.getStateChange()==ItemEvent.SELECTED) {
+					if (MainFrame.this.CANObj!=null) {
+						int res = CANObj.ChangeTerminalResistorState(true);
+						if (res != 0) {
+							JOptionPane.showMessageDialog(MainFrame.this, "Set Terminal Resistor State Failed.","Error", JOptionPane.ERROR_MESSAGE);
+							resistorMode.setSelected(false);
+						} else {
+							MainFrame.this.log("Terminal Resistor set to "+"120-Ohms.",  MessageType.INFO);
 						}
-						break;
-					case 2:break;
-					case 3:break;
-					default:break;
+					}
+				}
+				if (e.getStateChange()==ItemEvent.DESELECTED) {
+					if (MainFrame.this.CANObj!=null) {
+						int res = CANObj.ChangeTerminalResistorState(false);
+						if (res != 0) {
+							JOptionPane.showMessageDialog(MainFrame.this, "Set Terminal Resistor State Failed.","Error", JOptionPane.ERROR_MESSAGE);
+							resistorMode.setSelected(true);
+						} else {
+							MainFrame.this.log("Terminal Resistor set to "+"Open Circuit.",  MessageType.INFO);
+						}
 					}
 				}
 			}
 		});
 		resistorMode.setEnabled(false);
-		resistorMode.setModel(new DefaultComboBoxModel(CommonUtils.ResistorState.values()));
-		panelCAN.add(resistorMode, "25, 3, fill, default");
+		
+		panelCAN.add(resistorMode, "25, 3");
 		btnSend.setEnabled(false);
 		panelCAN.add(btnSend, "29, 3");
 		

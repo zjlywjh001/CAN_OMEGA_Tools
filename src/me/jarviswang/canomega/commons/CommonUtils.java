@@ -38,11 +38,6 @@ public class CommonUtils {
 	    private FuzzOrder() {}
 	}
 	
-	public static enum ResistorState {
-		Disabled, _120Ω;
-	    private ResistorState() {}
-	}
-	
 	public static enum JModes {
 		VPW,PWM;
 		private JModes() {}
