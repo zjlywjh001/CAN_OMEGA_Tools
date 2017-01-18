@@ -848,6 +848,9 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		mntmCopy = new JMenuItem("Copy to Clipboard");
 		mntmCopy.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (MainFrame.this.Logtable.getSelectedRow()<0) {
+					return ;
+				}
 				String ts = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),0).toString();
 				String type = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),1).toString();
 				if (type.toLowerCase().indexOf("receive")>=0) {
@@ -873,6 +876,9 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		mntmCopyToSender = new JMenuItem("Copy to Sender");
 		mntmCopyToSender.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				if (MainFrame.this.Logtable.getSelectedRow()<0) {
+					return ;
+				}
 				String id_str = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),2).toString();
 				String id = id_str.substring(0, id_str.length()-1);
 				String dlc = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),3).toString();
