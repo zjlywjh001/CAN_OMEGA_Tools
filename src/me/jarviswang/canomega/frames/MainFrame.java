@@ -6,17 +6,12 @@ import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import java.awt.GridLayout;
 import javax.swing.JMenuBar;
-import java.awt.GridBagLayout;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JMenu;
 import javax.swing.JLabel;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JComboBox;
@@ -69,29 +64,27 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.JTabbedPane;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DropMode;
 import javax.swing.JToggleButton;
-import javax.swing.table.DefaultTableModel;
+
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.swing.border.LineBorder;
-import java.awt.Color;
-import javax.swing.border.SoftBevelBorder;
-import javax.swing.border.BevelBorder;
 import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SpinnerModel;
 import javax.swing.JSpinner;
 import javax.swing.JCheckBox;
 import javax.swing.JTable;
 import java.awt.FlowLayout;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+
 import javax.swing.SpinnerNumberModel;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
@@ -104,11 +97,15 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import javax.swing.event.ChangeListener;
+import javax.swing.event.MouseInputListener;
 import javax.swing.event.ChangeEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import javax.swing.JPopupMenu;
+import java.awt.Component;
+import java.awt.event.MouseAdapter;
 
 public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageListener,KLineMessageListener,JMessageListener {
 
@@ -160,6 +157,10 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	private JMenuItem mntmSaveLog;
 	private JMenuItem mntmPayloadPlayer;
 	private Thread playprocess = null;
+	private static JPopupMenu popupMenu;
+	private JMenuItem mntmCopy;
+	private JMenuItem mntmCopyToSender;
+	private Clipboard clipboard;
 
 	/**
 	 * Launch the application.
@@ -235,6 +236,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		
 		JMenu mnAnalysis = new JMenu("Analysis");
 		menuBar.add(mnAnalysis);
+		
+		clipboard = this.getToolkit().getSystemClipboard();
 		
 		mntmPacketDiffTool = new JMenuItem("Packet Diff tool");
 		mntmPacketDiffTool.addActionListener(new ActionListener() {
@@ -830,11 +833,86 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		
 		Logtable = new JTable();
 		Logtable.setModel(new LogMessageTableModel());
+		final MouseInputListener mouseInputListener = getMouseInputListener(Logtable);//添加鼠标右键选择行
+		Logtable.addMouseListener(mouseInputListener);
+		Logtable.addMouseMotionListener(mouseInputListener);
 		Logtable.getColumnModel().getColumn(0).setPreferredWidth(100);
 		Logtable.getColumnModel().getColumn(1).setPreferredWidth(40);
 		Logtable.getColumnModel().getColumn(2).setPreferredWidth(90);
 		Logtable.getColumnModel().getColumn(3).setPreferredWidth(40);
 		Logtable.getColumnModel().getColumn(4).setPreferredWidth(370);
+		
+		popupMenu = new JPopupMenu();
+		addPopup(scrollPane, popupMenu);
+		
+		mntmCopy = new JMenuItem("Copy to Clipboard");
+		mntmCopy.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String ts = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),0).toString();
+				String type = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),1).toString();
+				if (type.toLowerCase().indexOf("receive")>=0) {
+					type = "IN";
+				} else if (type.toLowerCase().indexOf("send")>=0) {
+					type = "OUT";
+				} else if (type.toLowerCase().indexOf("info")>=0) {
+					type = "INFO";
+				} else if (type.toLowerCase().indexOf("error")>=0) {
+					type = "ERROR";
+				}
+				String id = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),2).toString();
+				String dlc = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),3).toString();
+				String data = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),4).toString();
+				String linestr = ts+"\t"+type+"\t"+id+"\t"+dlc+"\t"+data;
+				StringSelection clipstr = new StringSelection(linestr);
+				MainFrame.this.clipboard.setContents(clipstr, null);
+				
+			}
+		});
+		popupMenu.add(mntmCopy);
+		
+		mntmCopyToSender = new JMenuItem("Copy to Sender");
+		mntmCopyToSender.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String id_str = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),2).toString();
+				String id = id_str.substring(0, id_str.length()-1);
+				String dlc = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),3).toString();
+				String data = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),4).toString();
+				String[] split_data = data.split(" ");
+				for (int i = 0; i<8; i++) {
+					switch(i) {
+					case 0:
+						textData7.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 1:
+						textData6.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 2:
+						textData5.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 3:
+						textData4.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 4:
+						textData3.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 5:
+						textData2.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 6:
+						textData1.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					case 7:
+						textData0.setText(i<split_data.length?split_data[i]:"00");
+						break;
+					}
+				}
+				byte dlc_data = (byte)(Integer.parseInt(dlc)&0xFF);
+				spinDLC.setValue(dlc_data);
+				txtId.setText(id);
+				
+			}
+		});
+		popupMenu.add(mntmCopyToSender);
 		scrollPane.setViewportView(Logtable);
 		
 		txtId = new JTextField();
@@ -1736,6 +1814,9 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 	}
 	
 	private void setFrameState() {
+		if (this.CANObj==null) {
+			return ;
+		}
 		int spinvalue = ((Byte)spinDLC.getValue()).byteValue();
 		boolean rtr = chckbxRtr.isSelected();
 		if (rtr) {
@@ -2016,6 +2097,67 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 			
 		}
 	}
+	
+	private static MouseInputListener getMouseInputListener(final JTable jTable) {
+		return new MouseInputListener() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				processEvent(e);
+			}
+
+			@Override
+			public void mousePressed(MouseEvent e) {
+				processEvent(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				processEvent(e);
+				if ((e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0
+	                     && !e.isControlDown() && !e.isShiftDown()) {
+					popupMenu.show(jTable, e.getX(), e.getY());
+//	                popupMenu.show(tableLyz, e.getX(), e.getY());//右键菜单显示
+					}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				processEvent(e);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				processEvent(e);
+				
+			}
+
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				processEvent(e);
+			}
+
+			@Override
+			public void mouseMoved(MouseEvent e) {
+				processEvent(e);
+				
+			}
+			
+			private void processEvent(MouseEvent e) {
+				if ((e.getModifiers() & MouseEvent.BUTTON3_MASK) != 0) {
+					int modifiers = e.getModifiers();
+					modifiers -= MouseEvent.BUTTON3_MASK;
+	                modifiers |= MouseEvent.BUTTON1_MASK;
+	                MouseEvent ne = new MouseEvent(e.getComponent(), e.getID(),e.getWhen(), modifiers, e.getX()
+	            		   , e.getY(), e.getClickCount(), false);
+	                jTable.dispatchEvent(ne);
+				}
+			}
+			
+		};
+	}
+	
+	
 
 
 	@Override
@@ -2051,4 +2193,21 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 		
 	}
 
+	private static void addPopup(Component component, final JPopupMenu popup) {
+		component.addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				if (e.isPopupTrigger()) {
+					showMenu(e);
+				}
+			}
+			public void mouseReleased(MouseEvent e) {
+				if (e.isPopupTrigger()) {
+					showMenu(e);
+				}
+			}
+			private void showMenu(MouseEvent e) {
+				popup.show(e.getComponent(), e.getX(), e.getY());
+			}
+		});
+	}
 }
