@@ -883,6 +883,12 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 				String id = id_str.substring(0, id_str.length()-1);
 				String dlc = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),3).toString();
 				String data = MainFrame.this.Logtable.getValueAt(MainFrame.this.Logtable.getSelectedRow(),4).toString();
+				if (data.indexOf("Remote Transmission Request")>=0) {
+					chckbxRtr.setSelected(true);
+					return ;
+				} else {
+					chckbxRtr.setSelected(false);
+				}
 				String[] split_data = data.split(" ");
 				for (int i = 0; i<8; i++) {
 					switch(i) {
