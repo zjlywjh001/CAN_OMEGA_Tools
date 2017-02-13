@@ -337,6 +337,8 @@ public class MainFrame extends JFrame implements CANMessageListener,FuzzMessageL
 										System.out.println("Stop Play");
 										return ;
 									}
+									//Finish Play
+									pp.getStartButton().setEnabled(true);
 								}
 								
 							});
